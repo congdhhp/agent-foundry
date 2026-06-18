@@ -32,6 +32,8 @@ EXAMPLE_ARTIFACTS = [
     ROOT / "examples" / "evidence" / "evidence-example.json",
     ROOT / "examples" / "skills" / "web-research" / "skill.yaml",
     ROOT / "examples" / "skills" / "web-research" / "evals" / "golden_cases.yaml",
+    ROOT / "examples" / "skills" / "bug-fixing" / "skill.yaml",
+    ROOT / "examples" / "skills" / "bug-fixing" / "evals" / "golden_cases.yaml",
 ]
 
 

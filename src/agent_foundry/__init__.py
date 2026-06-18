@@ -9,13 +9,16 @@ from .models import (
     SkillManifest,
     WorkflowDefinition,
 )
+from .runtime import AgentRuntime, RuntimeOptions
 
 __all__ = [
+    "AgentRuntime",
     "AgentManifest",
     "CapabilityContractManifest",
     "EvalCase",
     "EvidenceObject",
     "PolicyManifest",
+    "RuntimeOptions",
     "SkillManifest",
     "WorkflowDefinition",
 ]

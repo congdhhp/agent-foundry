@@ -1,0 +1,14 @@
+{
+  "id": "coding_task_report",
+  "version": "1.0.0",
+  "type": "object",
+  "required": ["summary", "changed_files", "verification", "evidence_refs"],
+  "properties": {
+    "summary": { "type": "string" },
+    "changed_files": { "type": "array" },
+    "verification": { "type": "string" },
+    "evidence_refs": { "type": "array" },
+    "residual_risks": { "type": "array" }
+  }
+}
+

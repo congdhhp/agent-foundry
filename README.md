@@ -102,6 +102,20 @@ agent-foundry validate examples/capabilities/web.search.yaml
 agent-foundry validate examples/policies/read-only.yaml
 ```
 
+Run a local Phase 1 task:
+
+```bash
+agent-foundry run examples/agents/research-agent.yaml "Compare capability contracts with direct tool binding."
+```
+
+Inspect local sessions and task data:
+
+```bash
+agent-foundry sessions
+agent-foundry show <task_id> events
+agent-foundry show <task_id> evidence
+```
+
 Inspect an artifact:
 
 ```bash

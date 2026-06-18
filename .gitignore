@@ -51,6 +51,9 @@ coverage.xml
 .pytest_cache/
 cover/
 
+# Agent Foundry local runtime state
+.agent/
+
 # Translations
 *.mo
 *.pot

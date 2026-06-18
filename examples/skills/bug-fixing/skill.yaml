@@ -1,0 +1,27 @@
+id: bug-fixing
+version: 1.0.0
+name: Bug Fixing
+description: Understand a code task, inspect files, prepare a patch and verify changes.
+owner: engineering-platform-team
+risk_level: medium
+lifecycle_status: draft
+triggers:
+  intents:
+    - fix_bug
+    - repair_tests
+    - modify_code
+  keywords:
+    - bug
+    - fix
+    - failing tests
+    - patch
+requires:
+  capabilities:
+    - file.read@1.0
+    - file.patch@1.0
+    - shell.run@1.0
+    - git.diff@1.0
+optional_capabilities: []
+default_workflow: coding_task_graph@1.0.0
+output_schema: coding_task_report@1.0.0
+
