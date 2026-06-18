@@ -1,0 +1,40 @@
+apiVersion: agents.platform/v1
+kind: CapabilityContract
+metadata:
+  id: citation.extract
+  version: 1.0.0
+  name: Citation Extract
+  owner: ai-platform-team
+spec:
+  category: knowledge
+  accessType: read
+  riskLevel: low
+  inputSchema:
+    type: object
+    required:
+      - source
+    properties:
+      source:
+        type: string
+  outputSchema:
+    type: object
+    required:
+      - citations
+      - evidence_id
+      - metadata
+    properties:
+      citations:
+        type: array
+      evidence_id:
+        type: string
+      metadata:
+        type: object
+  semanticContract:
+    guarantees:
+      - Extracts citations or source references from supplied content.
+    constraints:
+      maxPayloadBytes: 500000
+  evidence:
+    creates_evidence: true
+    evidence_type: citation_observation
+

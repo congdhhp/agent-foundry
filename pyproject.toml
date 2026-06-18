@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=70", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-foundry"
+version = "0.1.0"
+description = "Skill-centric, policy-aware, tool-agnostic platform foundation for governed AI agents."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+  { name = "Agent Foundry Contributors" }
+]
+dependencies = [
+  "pydantic>=2.7,<3",
+  "PyYAML>=6.0.1,<7"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8,<10"
+]
+
+[project.scripts]
+agent-foundry = "agent_foundry.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

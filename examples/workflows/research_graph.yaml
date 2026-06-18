@@ -1,0 +1,23 @@
+id: research_graph
+version: 1.0.0
+runtime: langgraph
+state_schema: AgentState
+nodes:
+  - id: clarify_question
+    type: llm_reasoning
+  - id: search_sources
+    type: capability_call
+    capability: web.search@1.0
+  - id: fetch_sources
+    type: capability_call
+    capability: web.fetch@1.0
+  - id: extract_citations
+    type: capability_call
+    capability: citation.extract@1.0
+  - id: synthesize_report
+    type: llm_reasoning
+  - id: verify_grounding
+    type: evaluator
+  - id: compose_answer
+    type: output_composer
+

@@ -1,0 +1,163 @@
+{
+  "$defs": {
+    "AccessType": {
+      "enum": [
+        "read",
+        "write",
+        "execute"
+      ],
+      "title": "AccessType",
+      "type": "string"
+    },
+    "CapabilityEvidenceSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "creates_evidence": {
+          "title": "Creates Evidence",
+          "type": "boolean"
+        },
+        "evidence_type": {
+          "title": "Evidence Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "creates_evidence",
+        "evidence_type"
+      ],
+      "title": "CapabilityEvidenceSpec",
+      "type": "object"
+    },
+    "CapabilitySpec": {
+      "additionalProperties": false,
+      "properties": {
+        "accessType": {
+          "$ref": "#/$defs/AccessType"
+        },
+        "category": {
+          "title": "Category",
+          "type": "string"
+        },
+        "evidence": {
+          "$ref": "#/$defs/CapabilityEvidenceSpec"
+        },
+        "inputSchema": {
+          "additionalProperties": true,
+          "title": "Inputschema",
+          "type": "object"
+        },
+        "outputSchema": {
+          "additionalProperties": true,
+          "title": "Outputschema",
+          "type": "object"
+        },
+        "riskLevel": {
+          "$ref": "#/$defs/RiskLevel"
+        },
+        "semanticContract": {
+          "additionalProperties": true,
+          "title": "Semanticcontract",
+          "type": "object"
+        }
+      },
+      "required": [
+        "category",
+        "accessType",
+        "riskLevel",
+        "inputSchema",
+        "outputSchema",
+        "semanticContract",
+        "evidence"
+      ],
+      "title": "CapabilitySpec",
+      "type": "object"
+    },
+    "RiskLevel": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "RiskLevel",
+      "type": "string"
+    },
+    "VersionedMetadata": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Labels",
+          "type": "object"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "owner": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Owner"
+        },
+        "version": {
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "version"
+      ],
+      "title": "VersionedMetadata",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "apiVersion": {
+      "const": "agents.platform/v1",
+      "title": "Apiversion",
+      "type": "string"
+    },
+    "kind": {
+      "const": "CapabilityContract",
+      "title": "Kind",
+      "type": "string"
+    },
+    "metadata": {
+      "$ref": "#/$defs/VersionedMetadata"
+    },
+    "spec": {
+      "$ref": "#/$defs/CapabilitySpec"
+    }
+  },
+  "required": [
+    "apiVersion",
+    "kind",
+    "metadata",
+    "spec"
+  ],
+  "title": "CapabilityContractManifest",
+  "type": "object"
+}

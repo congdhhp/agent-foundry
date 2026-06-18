@@ -1,0 +1,108 @@
+{
+  "$defs": {
+    "EvidenceSourceType": {
+      "enum": [
+        "tool_result",
+        "retrieved_document",
+        "human_input",
+        "model_verified_source",
+        "artifact",
+        "remote_agent_result"
+      ],
+      "title": "EvidenceSourceType",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "capability": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Capability"
+    },
+    "confidence": {
+      "anyOf": [
+        {
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Confidence"
+    },
+    "evidence_id": {
+      "title": "Evidence Id",
+      "type": "string"
+    },
+    "raw_ref": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Raw Ref"
+    },
+    "sensitivity": {
+      "title": "Sensitivity",
+      "type": "string"
+    },
+    "source_type": {
+      "$ref": "#/$defs/EvidenceSourceType"
+    },
+    "source_uri": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Source Uri"
+    },
+    "summary": {
+      "title": "Summary",
+      "type": "string"
+    },
+    "task_id": {
+      "title": "Task Id",
+      "type": "string"
+    },
+    "timestamp": {
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "trusted": {
+      "default": false,
+      "title": "Trusted",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "evidence_id",
+    "task_id",
+    "source_type",
+    "timestamp",
+    "sensitivity",
+    "summary"
+  ],
+  "title": "EvidenceObject",
+  "type": "object"
+}

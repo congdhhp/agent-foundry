@@ -1,0 +1,14 @@
+{
+  "evidence_id": "ev_research_001",
+  "task_id": "task_research_001",
+  "source_type": "retrieved_document",
+  "source_uri": "https://example.com/reference",
+  "capability": "web.fetch@1.0",
+  "timestamp": "2026-06-18T00:00:00Z",
+  "sensitivity": "public",
+  "confidence": 0.82,
+  "summary": "Fetched reference material for a research task.",
+  "raw_ref": "object://task_research_001/source_001",
+  "trusted": false
+}
+

@@ -1,0 +1,46 @@
+apiVersion: agents.platform/v1
+kind: CapabilityContract
+metadata:
+  id: shell.run
+  version: 1.0.0
+  name: Shell Run
+  owner: engineering-platform-team
+spec:
+  category: workspace
+  accessType: execute
+  riskLevel: high
+  inputSchema:
+    type: object
+    required:
+      - command
+    properties:
+      command:
+        type: string
+      cwd:
+        type: string
+  outputSchema:
+    type: object
+    required:
+      - exit_code
+      - stdout
+      - stderr
+      - evidence_id
+    properties:
+      exit_code:
+        type: integer
+      stdout:
+        type: string
+      stderr:
+        type: string
+      evidence_id:
+        type: string
+  semanticContract:
+    guarantees:
+      - Executes command inside an authorized sandbox.
+    constraints:
+      denyDestructiveCommandsByDefault: true
+      timeoutSeconds: 120
+  evidence:
+    creates_evidence: true
+    evidence_type: command_result
+

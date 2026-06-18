@@ -1,0 +1,29 @@
+apiVersion: agents.platform/v1
+kind: Agent
+metadata:
+  id: coding-agent
+  name: Coding Agent
+  owner: engineering-platform-team
+  labels:
+    domain: coding
+    environment: local
+spec:
+  template: generic-task-agent@1.0.0
+  purpose: Modify code safely and verify changes with tests.
+  skills:
+    - bug-fixing@1.0.0
+  capabilityBindings:
+    file.read@1.0: workspace.read_file
+    file.patch@1.0: workspace.apply_patch
+    shell.run@1.0: sandbox.run_command
+    git.diff@1.0: git.diff
+  knowledgeScopes:
+    - source_code
+  memoryScopes:
+    - session
+    - task
+  policy: workspace-write@1.0.0
+  workflow: coding_task_graph@1.0.0
+  modelPolicy: default-model-policy@1.0.0
+  evalProfile: coding-agent-evals@1.0.0
+

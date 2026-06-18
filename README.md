@@ -84,4 +84,38 @@ Recommended first reference agents:
 
 ## Repository Status
 
-This repository currently contains the architecture blueprint and enterprise-grade documentation baseline. Implementation should proceed from the MVP delivery plan and artifact templates under [docs/templates/](./docs/templates/).
+This repository currently contains the architecture blueprint, enterprise-grade documentation baseline and Phase 0 architecture foundation implementation.
+
+## Phase 0 Developer Quickstart
+
+Install locally:
+
+```bash
+python -m pip install -e .[dev]
+```
+
+Validate example artifacts:
+
+```bash
+agent-foundry validate examples/agents/research-agent.yaml
+agent-foundry validate examples/capabilities/web.search.yaml
+agent-foundry validate examples/policies/read-only.yaml
+```
+
+Inspect an artifact:
+
+```bash
+agent-foundry inspect examples/agents/research-agent.yaml
+```
+
+Export generated JSON Schemas:
+
+```bash
+agent-foundry schemas export --output schemas
+```
+
+Run tests:
+
+```bash
+python -m pytest
+```

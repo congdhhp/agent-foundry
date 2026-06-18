@@ -1,0 +1,124 @@
+{
+  "$defs": {
+    "LifecycleStatus": {
+      "enum": [
+        "draft",
+        "review",
+        "approved",
+        "published",
+        "deprecated",
+        "archived"
+      ],
+      "title": "LifecycleStatus",
+      "type": "string"
+    },
+    "RiskLevel": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "RiskLevel",
+      "type": "string"
+    },
+    "SkillRequires": {
+      "additionalProperties": false,
+      "properties": {
+        "capabilities": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Capabilities",
+          "type": "array"
+        }
+      },
+      "title": "SkillRequires",
+      "type": "object"
+    },
+    "SkillTriggers": {
+      "additionalProperties": false,
+      "properties": {
+        "intents": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Intents",
+          "type": "array"
+        },
+        "keywords": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Keywords",
+          "type": "array"
+        }
+      },
+      "title": "SkillTriggers",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "default_workflow": {
+      "title": "Default Workflow",
+      "type": "string"
+    },
+    "description": {
+      "title": "Description",
+      "type": "string"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "lifecycle_status": {
+      "$ref": "#/$defs/LifecycleStatus"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "optional_capabilities": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Optional Capabilities",
+      "type": "array"
+    },
+    "output_schema": {
+      "title": "Output Schema",
+      "type": "string"
+    },
+    "owner": {
+      "title": "Owner",
+      "type": "string"
+    },
+    "requires": {
+      "$ref": "#/$defs/SkillRequires"
+    },
+    "risk_level": {
+      "$ref": "#/$defs/RiskLevel"
+    },
+    "triggers": {
+      "$ref": "#/$defs/SkillTriggers"
+    },
+    "version": {
+      "title": "Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "version",
+    "name",
+    "description",
+    "owner",
+    "risk_level",
+    "lifecycle_status",
+    "default_workflow",
+    "output_schema"
+  ],
+  "title": "SkillManifest",
+  "type": "object"
+}
