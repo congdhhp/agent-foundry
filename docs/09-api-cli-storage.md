@@ -88,7 +88,7 @@ agent-foundry workflow inspect coding_task_graph@1.0.0
 agent-foundry workflow impact coding_task_graph@1.0.0
 ```
 
-Current MVP note: dedicated `skill`, `policy` and `workflow` lifecycle commands are planned for the Artifact Management Plane. The current local implementation provides `skills list`, `skills inspect`, `skills validate` and generic artifact validation/inspection.
+Current MVP note: Phase 6 provides local `skill`, `policy` and `workflow` lifecycle commands plus a generated `.agent/artifact-index`. The older `skills list`, `skills inspect` and `skills validate` commands remain available for backward compatibility.
 
 ## Local Storage Layout
 

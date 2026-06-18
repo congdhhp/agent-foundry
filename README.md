@@ -84,7 +84,7 @@ Recommended first reference agents:
 
 ## Repository Status
 
-This repository currently contains the architecture blueprint, enterprise-grade documentation baseline and implementation through Phase 5 eval suite pipeline.
+This repository currently contains the architecture blueprint, enterprise-grade documentation baseline and implementation through Phase 6 local artifact management plane.
 
 ## Developer Quickstart
 
@@ -129,6 +129,17 @@ agent-foundry eval show <run_id>
 agent-foundry tools list
 agent-foundry tools validate
 agent-foundry tools bindings examples/agents/research-agent.yaml
+```
+
+Use Phase 6 artifact management commands:
+
+```bash
+agent-foundry artifacts list
+agent-foundry skill create my-research-skill --capability web.search@1.0 --workflow research_graph@1.0.0
+agent-foundry skill validate my-research-skill@1.0.0
+agent-foundry skill impact web-research@1.0.0
+agent-foundry policy simulate read-only@1.0.0 --capability web.search@1.0
+agent-foundry workflow impact research_graph@1.0.0
 ```
 
 Create and publish a local agent:

@@ -6,7 +6,7 @@ from typing import Any
 
 from .loader import load_document
 from .models import AgentManifest, SkillManifest
-from .registry import LocalRegistry
+from .refs import ArtifactRef
 from .validation import validate_document
 
 
@@ -66,9 +66,14 @@ class SkillRegistry:
             if skill_dir.is_file():
                 skill_dir = skill_dir.parent
             return self._load_package_dir(skill_dir)
-        registry = LocalRegistry(self.root)
-        manifest = registry.load_skill(str(path_or_ref))
-        return self._load_package_dir(self.skills_dir / manifest.id)
+        ref = ArtifactRef.parse(str(path_or_ref))
+        if not self.skills_dir.exists():
+            raise FileNotFoundError(f"Could not resolve skill package {path_or_ref}")
+        for skill_dir in sorted(path for path in self.skills_dir.iterdir() if path.is_dir()):
+            package = self._load_package_dir(skill_dir)
+            if ref.matches(package.manifest.id, package.manifest.version):
+                return package
+        raise FileNotFoundError(f"Could not resolve skill package {path_or_ref}")
 
     def validate_package(self, path_or_ref: str | Path) -> SkillPackageValidation:
         path = Path(path_or_ref)
@@ -84,6 +89,11 @@ class SkillRegistry:
                 errors.append(f"Missing required file: {required}")
         if not package.eval_files:
             errors.append("Missing eval files under evals/")
+        for eval_file in package.eval_files:
+            try:
+                validate_document(load_document(eval_file), "eval-case")
+            except Exception as exc:  # noqa: BLE001
+                errors.append(f"Invalid eval file {eval_file.name}: {exc}")
         if not package.instructions.strip():
             errors.append("SKILL.md is empty")
         if not package.manifest.requires.capabilities:
@@ -154,4 +164,3 @@ class SkillSelector:
             if score > 0:
                 selections.append(SkillSelection(skill=skill, score=score, reasons=reasons))
         return sorted(selections, key=lambda item: item.score, reverse=True)
-

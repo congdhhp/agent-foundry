@@ -39,8 +39,9 @@ The current local-first implementation supports:
 3. Skill list, inspect and validate commands.
 4. Generic artifact validate and inspect commands.
 5. Eval suite run, report and publish-gate commands.
-
-The current implementation does not yet provide dedicated create, publish, deprecate, version or impact-analysis commands for skills, policies and workflows.
+6. Artifact index generation under `.agent/artifact-index`.
+7. Dedicated local lifecycle commands for skills, policies and workflows.
+8. Local publish, deprecate, version and impact-analysis workflows for managed artifacts.
 
 ## Design Principle
 
@@ -245,9 +246,9 @@ An artifact can be published only if:
 5. Security or owner approval is complete when required.
 6. Immutable version policy is enforced.
 
-## Phase 6 Implementation Plan
+## Phase 6 Local Implementation
 
-Phase 6 should deliver local Artifact Management Plane commands before introducing a remote registry service.
+Phase 6 delivers local Artifact Management Plane commands before introducing a remote registry service.
 
 Deliverables:
 
@@ -258,6 +259,43 @@ Deliverables:
 5. Impact analysis for agent-to-skill, agent-to-policy and agent-to-workflow references.
 6. Artifact index persisted under `.agent/artifact-index`.
 7. Tests for lifecycle gates and dependency analysis.
+
+Implemented local commands:
+
+```bash
+agent-foundry artifacts list
+agent-foundry artifacts inspect <kind> <target>
+agent-foundry artifacts impact <kind> <target>
+agent-foundry artifacts rebuild-index
+
+agent-foundry skill create <skill-id>
+agent-foundry skill list
+agent-foundry skill inspect <skill-ref>
+agent-foundry skill validate <skill-ref-or-path>
+agent-foundry skill publish <skill-ref-or-path>
+agent-foundry skill deprecate <skill-ref> --reason "<reason>" --replacement <skill-ref>
+agent-foundry skill version <skill-ref> --bump major|minor|patch
+agent-foundry skill impact <skill-ref>
+
+agent-foundry policy create <policy-id>
+agent-foundry policy list
+agent-foundry policy inspect <policy-ref>
+agent-foundry policy validate <policy-ref-or-path>
+agent-foundry policy simulate <policy-ref> --capability <capability-ref>
+agent-foundry policy publish <policy-ref-or-path>
+agent-foundry policy deprecate <policy-ref> --reason "<reason>" --replacement <policy-ref>
+agent-foundry policy version <policy-ref> --bump major|minor|patch
+agent-foundry policy impact <policy-ref>
+
+agent-foundry workflow create <workflow-id>
+agent-foundry workflow list
+agent-foundry workflow inspect <workflow-ref>
+agent-foundry workflow validate <workflow-ref-or-path>
+agent-foundry workflow publish <workflow-ref-or-path>
+agent-foundry workflow deprecate <workflow-ref> --reason "<reason>" --replacement <workflow-ref>
+agent-foundry workflow version <workflow-ref> --bump major|minor|patch
+agent-foundry workflow impact <workflow-ref>
+```
 
 Exit criteria:
 

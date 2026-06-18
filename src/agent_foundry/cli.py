@@ -8,6 +8,7 @@ from pydantic import ValidationError
 
 from .agent_factory import AgentCreateRequest, AgentFactory
 from .agent_validation import AgentDeepValidator
+from .artifact_management import ArtifactManager, MANAGED_KINDS
 from .evals import EvalRunner
 from .loader import dump_json, load_document
 from .runtime import AgentRuntime, RuntimeOptions
@@ -129,6 +130,202 @@ def _skills(args: argparse.Namespace) -> int:
         )
         return 0 if result.valid else 1
     raise ValueError(f"Unknown skills command: {args.skills_command}")
+
+
+def _artifacts(args: argparse.Namespace) -> int:
+    manager = ArtifactManager(args.registry_root, args.store)
+    if args.artifacts_command == "list":
+        kind = None if args.kind == "all" else args.kind
+        print(dump_json(manager.list_artifacts(kind)))
+        return 0
+    if args.artifacts_command == "inspect":
+        print(dump_json(manager.inspect(args.kind, args.target)))
+        return 0
+    if args.artifacts_command == "impact":
+        print(dump_json(manager.impact(args.kind, args.target)))
+        return 0
+    if args.artifacts_command == "rebuild-index":
+        print(dump_json({"artifacts": manager.list_artifacts()}))
+        return 0
+    raise ValueError(f"Unknown artifacts command: {args.artifacts_command}")
+
+
+def _skill(args: argparse.Namespace) -> int:
+    manager = ArtifactManager(args.registry_root, args.store)
+    if args.skill_command == "list":
+        print(dump_json(manager.list_artifacts("skill")))
+        return 0
+    if args.skill_command == "create":
+        path = manager.create_skill(
+            args.skill_id,
+            name=args.name,
+            description=args.description,
+            owner=args.owner,
+            capabilities=args.capability,
+            workflow=args.workflow,
+            output_schema=args.output_schema,
+            overwrite=args.overwrite,
+        )
+        print(dump_json({"created": True, "path": str(path)}))
+        return 0
+    if args.skill_command == "inspect":
+        print(dump_json(manager.inspect("skill", args.skill)))
+        return 0
+    if args.skill_command == "validate":
+        result = manager.validate_artifact("skill", args.skill)
+        print(dump_json(result.to_dict()))
+        return 0 if result.valid else 1
+    if args.skill_command == "publish":
+        result = manager.publish("skill", args.skill, args.eval_suite, args.agent)
+        print(dump_json(result))
+        return 0 if result["published"] else 1
+    if args.skill_command == "deprecate":
+        print(
+            dump_json(
+                manager.deprecate(
+                    "skill",
+                    args.skill,
+                    reason=args.reason,
+                    replacement=args.replacement,
+                )
+            )
+        )
+        return 0
+    if args.skill_command == "version":
+        print(
+            dump_json(
+                manager.version_artifact(
+                    "skill",
+                    args.skill,
+                    bump=args.bump,
+                    version=args.version,
+                    overwrite=args.overwrite,
+                )
+            )
+        )
+        return 0
+    if args.skill_command == "impact":
+        print(dump_json(manager.impact("skill", args.skill)))
+        return 0
+    raise ValueError(f"Unknown skill command: {args.skill_command}")
+
+
+def _policy(args: argparse.Namespace) -> int:
+    manager = ArtifactManager(args.registry_root, args.store)
+    if args.policy_command == "list":
+        print(dump_json(manager.list_artifacts("policy")))
+        return 0
+    if args.policy_command == "create":
+        path = manager.create_policy(
+            args.policy_id,
+            owner=args.owner,
+            allow=args.allow,
+            require_approval=args.require_approval,
+            deny_risk_level=args.deny_risk_level,
+            overwrite=args.overwrite,
+        )
+        print(dump_json({"created": True, "path": str(path)}))
+        return 0
+    if args.policy_command == "inspect":
+        print(dump_json(manager.inspect("policy", args.policy)))
+        return 0
+    if args.policy_command == "validate":
+        result = manager.validate_artifact("policy", args.policy)
+        print(dump_json(result.to_dict()))
+        return 0 if result.valid else 1
+    if args.policy_command == "simulate":
+        print(dump_json(manager.simulate_policy(args.policy, args.capability, args.agent)))
+        return 0
+    if args.policy_command == "publish":
+        result = manager.publish("policy", args.policy)
+        print(dump_json(result))
+        return 0 if result["published"] else 1
+    if args.policy_command == "deprecate":
+        print(
+            dump_json(
+                manager.deprecate(
+                    "policy",
+                    args.policy,
+                    reason=args.reason,
+                    replacement=args.replacement,
+                )
+            )
+        )
+        return 0
+    if args.policy_command == "version":
+        print(
+            dump_json(
+                manager.version_artifact(
+                    "policy",
+                    args.policy,
+                    bump=args.bump,
+                    version=args.version,
+                    overwrite=args.overwrite,
+                )
+            )
+        )
+        return 0
+    if args.policy_command == "impact":
+        print(dump_json(manager.impact("policy", args.policy)))
+        return 0
+    raise ValueError(f"Unknown policy command: {args.policy_command}")
+
+
+def _workflow(args: argparse.Namespace) -> int:
+    manager = ArtifactManager(args.registry_root, args.store)
+    if args.workflow_command == "list":
+        print(dump_json(manager.list_artifacts("workflow")))
+        return 0
+    if args.workflow_command == "create":
+        path = manager.create_workflow(
+            args.workflow_id,
+            runtime=args.runtime,
+            state_schema=args.state_schema,
+            capabilities=args.capability,
+            overwrite=args.overwrite,
+        )
+        print(dump_json({"created": True, "path": str(path)}))
+        return 0
+    if args.workflow_command == "inspect":
+        print(dump_json(manager.inspect("workflow", args.workflow)))
+        return 0
+    if args.workflow_command == "validate":
+        result = manager.validate_artifact("workflow", args.workflow)
+        print(dump_json(result.to_dict()))
+        return 0 if result.valid else 1
+    if args.workflow_command == "publish":
+        result = manager.publish("workflow", args.workflow, args.eval_suite, args.agent)
+        print(dump_json(result))
+        return 0 if result["published"] else 1
+    if args.workflow_command == "deprecate":
+        print(
+            dump_json(
+                manager.deprecate(
+                    "workflow",
+                    args.workflow,
+                    reason=args.reason,
+                    replacement=args.replacement,
+                )
+            )
+        )
+        return 0
+    if args.workflow_command == "version":
+        print(
+            dump_json(
+                manager.version_artifact(
+                    "workflow",
+                    args.workflow,
+                    bump=args.bump,
+                    version=args.version,
+                    overwrite=args.overwrite,
+                )
+            )
+        )
+        return 0
+    if args.workflow_command == "impact":
+        print(dump_json(manager.impact("workflow", args.workflow)))
+        return 0
+    raise ValueError(f"Unknown workflow command: {args.workflow_command}")
 
 
 def _agent(args: argparse.Namespace) -> int:
@@ -344,6 +541,137 @@ def build_parser() -> argparse.ArgumentParser:
     skills_validate.add_argument("skill", help="Skill reference or package path")
     skills_parser.set_defaults(func=_skills)
 
+    artifacts_parser = subparsers.add_parser("artifacts", help="Manage artifact index")
+    artifacts_parser.add_argument("--registry-root", default=".")
+    artifacts_parser.add_argument("--store", default=".agent")
+    artifacts_subparsers = artifacts_parser.add_subparsers(
+        dest="artifacts_command", required=True
+    )
+    artifacts_list = artifacts_subparsers.add_parser("list", help="List managed artifacts")
+    artifacts_list.add_argument("--kind", choices=["all", *MANAGED_KINDS], default="all")
+    artifacts_inspect = artifacts_subparsers.add_parser(
+        "inspect", help="Inspect an indexed artifact"
+    )
+    artifacts_inspect.add_argument("kind", choices=MANAGED_KINDS)
+    artifacts_inspect.add_argument("target")
+    artifacts_impact = artifacts_subparsers.add_parser(
+        "impact", help="Show artifact dependency impact"
+    )
+    artifacts_impact.add_argument("kind", choices=MANAGED_KINDS)
+    artifacts_impact.add_argument("target")
+    artifacts_subparsers.add_parser("rebuild-index", help="Rebuild local artifact index")
+    artifacts_parser.set_defaults(func=_artifacts)
+
+    skill_parser = subparsers.add_parser("skill", help="Manage skill lifecycle")
+    skill_parser.add_argument("--registry-root", default=".")
+    skill_parser.add_argument("--store", default=".agent")
+    skill_subparsers = skill_parser.add_subparsers(dest="skill_command", required=True)
+    skill_subparsers.add_parser("list", help="List skill artifacts")
+    skill_create = skill_subparsers.add_parser("create", help="Create a skill scaffold")
+    skill_create.add_argument("skill_id")
+    skill_create.add_argument("--name")
+    skill_create.add_argument("--description")
+    skill_create.add_argument("--owner", default="local-user")
+    skill_create.add_argument("--capability", action="append", default=[])
+    skill_create.add_argument("--workflow", default="general_reasoning_graph@1.0.0")
+    skill_create.add_argument("--output-schema")
+    skill_create.add_argument("--overwrite", action="store_true")
+    skill_inspect = skill_subparsers.add_parser("inspect", help="Inspect a skill")
+    skill_inspect.add_argument("skill")
+    skill_validate = skill_subparsers.add_parser("validate", help="Validate a skill")
+    skill_validate.add_argument("skill")
+    skill_publish = skill_subparsers.add_parser("publish", help="Publish a skill")
+    skill_publish.add_argument("skill")
+    skill_publish.add_argument("--eval-suite")
+    skill_publish.add_argument("--agent")
+    skill_deprecate = skill_subparsers.add_parser("deprecate", help="Deprecate a skill")
+    skill_deprecate.add_argument("skill")
+    skill_deprecate.add_argument("--reason", required=True)
+    skill_deprecate.add_argument("--replacement")
+    skill_version = skill_subparsers.add_parser("version", help="Create a new skill version")
+    skill_version.add_argument("skill")
+    skill_version.add_argument("--bump", choices=["major", "minor", "patch"])
+    skill_version.add_argument("--version")
+    skill_version.add_argument("--overwrite", action="store_true")
+    skill_impact = skill_subparsers.add_parser("impact", help="Show skill impact")
+    skill_impact.add_argument("skill")
+    skill_parser.set_defaults(func=_skill)
+
+    policy_parser = subparsers.add_parser("policy", help="Manage policy lifecycle")
+    policy_parser.add_argument("--registry-root", default=".")
+    policy_parser.add_argument("--store", default=".agent")
+    policy_subparsers = policy_parser.add_subparsers(dest="policy_command", required=True)
+    policy_subparsers.add_parser("list", help="List policies")
+    policy_create = policy_subparsers.add_parser("create", help="Create a policy scaffold")
+    policy_create.add_argument("policy_id")
+    policy_create.add_argument("--owner", default="local-user")
+    policy_create.add_argument("--allow", action="append", default=[])
+    policy_create.add_argument("--require-approval", action="append", default=[])
+    policy_create.add_argument("--deny-risk-level", action="append", default=[])
+    policy_create.add_argument("--overwrite", action="store_true")
+    policy_inspect = policy_subparsers.add_parser("inspect", help="Inspect a policy")
+    policy_inspect.add_argument("policy")
+    policy_validate = policy_subparsers.add_parser("validate", help="Validate a policy")
+    policy_validate.add_argument("policy")
+    policy_simulate = policy_subparsers.add_parser("simulate", help="Simulate policy decision")
+    policy_simulate.add_argument("policy")
+    policy_simulate.add_argument("--capability", required=True)
+    policy_simulate.add_argument("--agent")
+    policy_publish = policy_subparsers.add_parser("publish", help="Publish a policy")
+    policy_publish.add_argument("policy")
+    policy_deprecate = policy_subparsers.add_parser("deprecate", help="Deprecate a policy")
+    policy_deprecate.add_argument("policy")
+    policy_deprecate.add_argument("--reason", required=True)
+    policy_deprecate.add_argument("--replacement")
+    policy_version = policy_subparsers.add_parser("version", help="Create a new policy version")
+    policy_version.add_argument("policy")
+    policy_version.add_argument("--bump", choices=["major", "minor", "patch"])
+    policy_version.add_argument("--version")
+    policy_version.add_argument("--overwrite", action="store_true")
+    policy_impact = policy_subparsers.add_parser("impact", help="Show policy impact")
+    policy_impact.add_argument("policy")
+    policy_parser.set_defaults(func=_policy)
+
+    workflow_parser = subparsers.add_parser("workflow", help="Manage workflow lifecycle")
+    workflow_parser.add_argument("--registry-root", default=".")
+    workflow_parser.add_argument("--store", default=".agent")
+    workflow_subparsers = workflow_parser.add_subparsers(
+        dest="workflow_command", required=True
+    )
+    workflow_subparsers.add_parser("list", help="List workflows")
+    workflow_create = workflow_subparsers.add_parser(
+        "create", help="Create a workflow scaffold"
+    )
+    workflow_create.add_argument("workflow_id")
+    workflow_create.add_argument("--runtime", default="langgraph")
+    workflow_create.add_argument("--state-schema", default="AgentState")
+    workflow_create.add_argument("--capability", action="append", default=[])
+    workflow_create.add_argument("--overwrite", action="store_true")
+    workflow_inspect = workflow_subparsers.add_parser("inspect", help="Inspect a workflow")
+    workflow_inspect.add_argument("workflow")
+    workflow_validate = workflow_subparsers.add_parser("validate", help="Validate a workflow")
+    workflow_validate.add_argument("workflow")
+    workflow_publish = workflow_subparsers.add_parser("publish", help="Publish a workflow")
+    workflow_publish.add_argument("workflow")
+    workflow_publish.add_argument("--eval-suite")
+    workflow_publish.add_argument("--agent")
+    workflow_deprecate = workflow_subparsers.add_parser(
+        "deprecate", help="Deprecate a workflow"
+    )
+    workflow_deprecate.add_argument("workflow")
+    workflow_deprecate.add_argument("--reason", required=True)
+    workflow_deprecate.add_argument("--replacement")
+    workflow_version = workflow_subparsers.add_parser(
+        "version", help="Create a new workflow version"
+    )
+    workflow_version.add_argument("workflow")
+    workflow_version.add_argument("--bump", choices=["major", "minor", "patch"])
+    workflow_version.add_argument("--version")
+    workflow_version.add_argument("--overwrite", action="store_true")
+    workflow_impact = workflow_subparsers.add_parser("impact", help="Show workflow impact")
+    workflow_impact.add_argument("workflow")
+    workflow_parser.set_defaults(func=_workflow)
+
     agent_parser = subparsers.add_parser("agent", help="Agent factory commands")
     agent_parser.add_argument("--registry-root", default=".")
     agent_parser.add_argument("--store", default=".agent")
@@ -411,7 +739,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         return args.func(args)
-    except (FileNotFoundError, ValueError, ValidationError) as exc:
+    except (FileExistsError, FileNotFoundError, ValueError, ValidationError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 
