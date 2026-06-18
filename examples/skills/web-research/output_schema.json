@@ -1,0 +1,14 @@
+{
+  "id": "research_report",
+  "version": "1.0.0",
+  "type": "object",
+  "required": ["summary", "findings", "evidence_refs", "confidence"],
+  "properties": {
+    "summary": { "type": "string" },
+    "findings": { "type": "array" },
+    "evidence_refs": { "type": "array" },
+    "confidence": { "type": "string" },
+    "open_questions": { "type": "array" }
+  }
+}
+

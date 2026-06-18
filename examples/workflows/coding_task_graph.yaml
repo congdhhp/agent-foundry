@@ -1,0 +1,24 @@
+id: coding_task_graph
+version: 1.0.0
+runtime: langgraph
+state_schema: AgentState
+nodes:
+  - id: understand_task
+    type: llm_reasoning
+  - id: read_relevant_files
+    type: capability_call
+    capability: file.read@1.0
+  - id: plan_patch
+    type: llm_reasoning
+  - id: apply_patch
+    type: capability_call
+    capability: file.patch@1.0
+  - id: run_verification
+    type: capability_call
+    capability: shell.run@1.0
+  - id: collect_diff
+    type: capability_call
+    capability: git.diff@1.0
+  - id: summarize_changes
+    type: output_composer
+

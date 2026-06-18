@@ -1,0 +1,143 @@
+{
+  "$defs": {
+    "AgentMetadata": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Labels",
+          "type": "object"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "owner": {
+          "title": "Owner",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "owner"
+      ],
+      "title": "AgentMetadata",
+      "type": "object"
+    },
+    "AgentSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "capabilityBindings": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Capabilitybindings",
+          "type": "object"
+        },
+        "evalProfile": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evalprofile"
+        },
+        "knowledgeScopes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Knowledgescopes",
+          "type": "array"
+        },
+        "memoryScopes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Memoryscopes",
+          "type": "array"
+        },
+        "modelPolicy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Modelpolicy"
+        },
+        "policy": {
+          "title": "Policy",
+          "type": "string"
+        },
+        "purpose": {
+          "title": "Purpose",
+          "type": "string"
+        },
+        "skills": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Skills",
+          "type": "array"
+        },
+        "template": {
+          "title": "Template",
+          "type": "string"
+        },
+        "workflow": {
+          "title": "Workflow",
+          "type": "string"
+        }
+      },
+      "required": [
+        "template",
+        "purpose",
+        "policy",
+        "workflow"
+      ],
+      "title": "AgentSpec",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "apiVersion": {
+      "const": "agents.platform/v1",
+      "title": "Apiversion",
+      "type": "string"
+    },
+    "kind": {
+      "const": "Agent",
+      "title": "Kind",
+      "type": "string"
+    },
+    "metadata": {
+      "$ref": "#/$defs/AgentMetadata"
+    },
+    "spec": {
+      "$ref": "#/$defs/AgentSpec"
+    }
+  },
+  "required": [
+    "apiVersion",
+    "kind",
+    "metadata",
+    "spec"
+  ],
+  "title": "AgentManifest",
+  "type": "object"
+}

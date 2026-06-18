@@ -1,0 +1,45 @@
+apiVersion: agents.platform/v1
+kind: CapabilityContract
+metadata:
+  id: web.search
+  version: 1.0.0
+  name: Web Search
+  owner: ai-platform-team
+spec:
+  category: knowledge
+  accessType: read
+  riskLevel: low
+  inputSchema:
+    type: object
+    required:
+      - query
+    properties:
+      query:
+        type: string
+      limit:
+        type: integer
+        minimum: 1
+        maximum: 20
+  outputSchema:
+    type: object
+    required:
+      - results
+      - evidence_id
+      - metadata
+    properties:
+      results:
+        type: array
+      evidence_id:
+        type: string
+      metadata:
+        type: object
+  semanticContract:
+    guarantees:
+      - Searches web-accessible sources.
+      - Does not mutate external systems.
+    constraints:
+      maxResults: 20
+  evidence:
+    creates_evidence: true
+    evidence_type: web_search_result
+

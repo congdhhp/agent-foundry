@@ -1,0 +1,26 @@
+id: web-research
+version: 1.0.0
+name: Web Research
+description: Research topics, evaluate sources and produce grounded cited summaries.
+owner: ai-platform-team
+risk_level: low
+lifecycle_status: draft
+triggers:
+  intents:
+    - research_topic
+    - compare_sources
+    - produce_report
+  keywords:
+    - research
+    - compare
+    - sources
+    - citations
+requires:
+  capabilities:
+    - web.search@1.0
+    - web.fetch@1.0
+    - citation.extract@1.0
+optional_capabilities: []
+default_workflow: research_graph@1.0.0
+output_schema: research_report@1.0.0
+

@@ -1,0 +1,14 @@
+id: general_reasoning_graph
+version: 1.0.0
+runtime: langgraph
+state_schema: AgentState
+nodes:
+  - id: understand_task
+    type: llm_reasoning
+  - id: reason
+    type: llm_reasoning
+  - id: verify
+    type: evaluator
+  - id: compose_answer
+    type: output_composer
+

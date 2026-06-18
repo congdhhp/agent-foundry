@@ -1,0 +1,88 @@
+{
+  "$defs": {
+    "WorkflowNode": {
+      "additionalProperties": false,
+      "properties": {
+        "capability": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Capability"
+        },
+        "config": {
+          "additionalProperties": true,
+          "title": "Config",
+          "type": "object"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/WorkflowNodeType"
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ],
+      "title": "WorkflowNode",
+      "type": "object"
+    },
+    "WorkflowNodeType": {
+      "enum": [
+        "llm_reasoning",
+        "capability_call",
+        "knowledge_retrieval",
+        "human_approval",
+        "evaluator",
+        "router",
+        "artifact_writer",
+        "output_composer"
+      ],
+      "title": "WorkflowNodeType",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "nodes": {
+      "items": {
+        "$ref": "#/$defs/WorkflowNode"
+      },
+      "title": "Nodes",
+      "type": "array"
+    },
+    "runtime": {
+      "title": "Runtime",
+      "type": "string"
+    },
+    "state_schema": {
+      "title": "State Schema",
+      "type": "string"
+    },
+    "version": {
+      "title": "Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "version",
+    "runtime",
+    "state_schema",
+    "nodes"
+  ],
+  "title": "WorkflowDefinition",
+  "type": "object"
+}

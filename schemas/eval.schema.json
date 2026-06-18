@@ -1,0 +1,80 @@
+{
+  "$defs": {
+    "EvalExpected": {
+      "additionalProperties": false,
+      "properties": {
+        "grounding": {
+          "additionalProperties": true,
+          "title": "Grounding",
+          "type": "object"
+        },
+        "output": {
+          "additionalProperties": true,
+          "title": "Output",
+          "type": "object"
+        },
+        "policy": {
+          "additionalProperties": true,
+          "title": "Policy",
+          "type": "object"
+        },
+        "safety": {
+          "additionalProperties": true,
+          "title": "Safety",
+          "type": "object"
+        },
+        "selected_skills": {
+          "additionalProperties": true,
+          "title": "Selected Skills",
+          "type": "object"
+        },
+        "tool_trajectory": {
+          "additionalProperties": true,
+          "title": "Tool Trajectory",
+          "type": "object"
+        }
+      },
+      "title": "EvalExpected",
+      "type": "object"
+    },
+    "EvalTask": {
+      "additionalProperties": false,
+      "properties": {
+        "input": {
+          "title": "Input",
+          "type": "string"
+        },
+        "metadata": {
+          "additionalProperties": true,
+          "title": "Metadata",
+          "type": "object"
+        }
+      },
+      "required": [
+        "input"
+      ],
+      "title": "EvalTask",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "expected": {
+      "$ref": "#/$defs/EvalExpected"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "task": {
+      "$ref": "#/$defs/EvalTask"
+    }
+  },
+  "required": [
+    "id",
+    "task",
+    "expected"
+  ],
+  "title": "EvalCase",
+  "type": "object"
+}

@@ -1,0 +1,41 @@
+apiVersion: agents.platform/v1
+kind: CapabilityContract
+metadata:
+  id: web.fetch
+  version: 1.0.0
+  name: Web Fetch
+  owner: ai-platform-team
+spec:
+  category: knowledge
+  accessType: read
+  riskLevel: low
+  inputSchema:
+    type: object
+    required:
+      - url
+    properties:
+      url:
+        type: string
+  outputSchema:
+    type: object
+    required:
+      - content
+      - evidence_id
+      - metadata
+    properties:
+      content:
+        type: string
+      evidence_id:
+        type: string
+      metadata:
+        type: object
+  semanticContract:
+    guarantees:
+      - Fetches source content for analysis.
+      - Tags fetched content as untrusted by default.
+    constraints:
+      maxPayloadBytes: 1000000
+  evidence:
+    creates_evidence: true
+    evidence_type: fetched_document
+

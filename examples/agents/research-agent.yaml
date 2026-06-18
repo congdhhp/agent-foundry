@@ -1,0 +1,28 @@
+apiVersion: agents.platform/v1
+kind: Agent
+metadata:
+  id: research-agent
+  name: Research Agent
+  owner: ai-platform-team
+  labels:
+    domain: research
+    environment: local
+spec:
+  template: generic-task-agent@1.0.0
+  purpose: Research topics, compare sources and produce cited reports.
+  skills:
+    - web-research@1.0.0
+  capabilityBindings:
+    web.search@1.0: browser.search
+    web.fetch@1.0: browser.fetch
+    citation.extract@1.0: citation.extract
+  knowledgeScopes:
+    - public_web
+  memoryScopes:
+    - session
+    - task
+  policy: read-only@1.0.0
+  workflow: research_graph@1.0.0
+  modelPolicy: default-model-policy@1.0.0
+  evalProfile: research-agent-evals@1.0.0
+

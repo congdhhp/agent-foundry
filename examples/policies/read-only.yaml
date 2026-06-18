@@ -1,0 +1,19 @@
+apiVersion: agents.platform/v1
+kind: Policy
+metadata:
+  id: read-only
+  version: 1.0.0
+  name: Read Only
+  owner: ai-platform-team
+spec:
+  rules:
+    - match:
+        accessType: read
+      decision: allow
+    - match:
+        accessType: write
+      decision: deny
+    - match:
+        accessType: execute
+      decision: deny
+
