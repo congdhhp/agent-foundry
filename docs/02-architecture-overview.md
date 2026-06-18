@@ -87,6 +87,8 @@ Control Plane owns definition and lifecycle:
 8. Eval suites.
 9. Release gates.
 
+The Artifact Management Plane is the local and enterprise control-plane capability for creating, validating, publishing, versioning, deprecating and impact-analyzing these artifacts before they are used by the execution runtime.
+
 Execution Plane owns runtime behavior:
 
 1. Load resolved agent profile.
@@ -137,6 +139,7 @@ Boundary contract:
 | Policy Registry | Stores base, tenant, environment, agent and tool policies |
 | Workflow Registry | Stores workflow graph definitions and state schemas |
 | Eval Registry | Stores golden, safety, policy and trajectory evals |
+| Artifact Management Plane | Manages artifact lifecycle, publish gates, versioning and impact analysis |
 | Generic Runtime | Executes resolved agent profiles without domain hard-coding |
 | Skill Engine | Loads skill instructions and selects applicable skills |
 | Planner / Router | Decides next step: reason, retrieve, tool, human, agent or answer |
@@ -183,4 +186,3 @@ Boundary contract:
 6. Shipping skills without evals.
 7. Implementing A2A before single-agent runtime and tool plane are stable.
 8. Mixing audit logs and debug traces into one mutable store.
-

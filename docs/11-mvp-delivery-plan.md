@@ -190,6 +190,38 @@ Exit criteria:
 2. Demo flow is repeatable.
 3. Known risks and gaps are documented.
 
+## Post-MVP Enterprise Phases
+
+### Phase 6: Artifact Management Plane
+
+Deliverables:
+
+1. Unified artifact listing across agents, skills, policies, workflows, capabilities, providers and eval suites.
+2. Dedicated `skill`, `policy` and `workflow` command groups.
+3. Create scaffolds for skill, policy and workflow artifacts.
+4. Publish, deprecate and version commands for local artifacts.
+5. Impact analysis for agent-to-skill, agent-to-policy and agent-to-workflow references.
+6. Artifact index persisted under `.agent/artifact-index`.
+7. Tests for lifecycle gates and dependency analysis.
+
+Exit criteria:
+
+1. A user can create a skill from the CLI, validate it and attach it to an agent.
+2. A user can inspect which agents are affected before changing a skill, policy or workflow.
+3. Publishing an artifact records lifecycle status and blocks unsafe changes.
+4. Deprecating an artifact provides replacement guidance.
+5. Existing agent publish and eval suite gates continue to pass.
+
+### Later Enterprise Phases
+
+Candidate follow-up phases:
+
+1. Model provider integration and real LLM execution.
+2. Remote registry API and multi-user governance.
+3. Human approval console.
+4. Enterprise authentication, authorization and tenant isolation.
+5. Deployment packaging and artifact bundle promotion.
+
 ## MVP Success Criteria
 
 1. Create agent from manifest.
@@ -236,4 +268,3 @@ For an MVP feature:
 5. Audit event emitted for security-relevant action.
 6. Documentation updated.
 7. Demo path validated.
-

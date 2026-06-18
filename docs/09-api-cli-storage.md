@@ -14,6 +14,9 @@ agent run
 agent inspect
 agent approve
 agent skills
+agent skill
+agent policy
+agent workflow
 agent tools
 agent eval
 agent publish
@@ -29,6 +32,9 @@ agent sessions
 | `agent inspect` | Show resolved profile, skills, policy and tools |
 | `agent approve` | Approve or reject pending action |
 | `agent skills` | List, validate and publish skills |
+| `agent skill` | Manage skill lifecycle, versions, publish gates and impact analysis |
+| `agent policy` | Manage policy lifecycle, simulation, publishing and impact analysis |
+| `agent workflow` | Manage workflow lifecycle, validation, publishing and impact analysis |
 | `agent tools` | List providers and capability bindings |
 | `agent eval` | Run eval suites |
 | `agent sessions` | Inspect task state, traces and artifacts |
@@ -67,6 +73,23 @@ Run evals:
 agent eval run sre-monitoring-agent-evals@1.0.0
 ```
 
+Manage artifacts:
+
+```bash
+agent-foundry skill create incident-triage
+agent-foundry skill validate examples/skills/incident-triage
+agent-foundry skill publish incident-triage@1.0.0 --eval-suite monitoring-agent-evals@1.0.0
+agent-foundry skill impact incident-triage@1.0.0
+
+agent-foundry policy simulate workspace-write@1.0.0 --agent coding-agent --capability shell.run@1.0
+agent-foundry policy publish workspace-write@1.0.0
+
+agent-foundry workflow inspect coding_task_graph@1.0.0
+agent-foundry workflow impact coding_task_graph@1.0.0
+```
+
+Current MVP note: dedicated `skill`, `policy` and `workflow` lifecycle commands are planned for the Artifact Management Plane. The current local implementation provides `skills list`, `skills inspect`, `skills validate` and generic artifact validation/inspection.
+
 ## Local Storage Layout
 
 ```text
@@ -87,6 +110,7 @@ agent eval run sre-monitoring-agent-evals@1.0.0
       state.sqlite
       trace.jsonl
       artifacts/
+  artifact-index/
   policies/
   tools/
 ```
@@ -114,6 +138,44 @@ POST   /skills/{skill_id}/validate
 POST   /skills/{skill_id}/publish
 ```
 
+### Policy Endpoints
+
+```text
+GET    /policies
+POST   /policies
+GET    /policies/{policy_id}
+POST   /policies/{policy_id}/validate
+POST   /policies/{policy_id}/simulate
+POST   /policies/{policy_id}/publish
+POST   /policies/{policy_id}/deprecate
+POST   /policies/{policy_id}/impact
+```
+
+### Workflow Endpoints
+
+```text
+GET    /workflows
+POST   /workflows
+GET    /workflows/{workflow_id}
+POST   /workflows/{workflow_id}/validate
+POST   /workflows/{workflow_id}/publish
+POST   /workflows/{workflow_id}/deprecate
+POST   /workflows/{workflow_id}/impact
+```
+
+### Generic Artifact Endpoints
+
+```text
+GET    /artifacts
+GET    /artifacts/{kind}
+GET    /artifacts/{kind}/{id}/versions
+GET    /artifacts/{kind}/{id}/versions/{version}
+POST   /artifacts/{kind}/{id}/versions/{version}/validate
+POST   /artifacts/{kind}/{id}/versions/{version}/publish
+POST   /artifacts/{kind}/{id}/versions/{version}/deprecate
+POST   /artifacts/{kind}/{id}/versions/{version}/impact
+```
+
 ### Capability and Tool Endpoints
 
 ```text
@@ -124,11 +186,9 @@ POST   /tools/bindings
 POST   /tools/providers/{provider_id}/validate
 ```
 
-### Policy and Approval Endpoints
+### Approval Endpoints
 
 ```text
-GET    /policies
-POST   /policies/{policy_id}/simulate
 GET    /approvals
 POST   /approvals/{approval_id}/approve
 POST   /approvals/{approval_id}/deny
@@ -190,6 +250,9 @@ POST /agents/sre-monitoring-agent/run
 | Agent Registry DB | Agents, templates, bindings | Postgres |
 | Skill Registry | Skill packages and metadata | Git + object store + Postgres |
 | Capability Registry | Capability contracts | Postgres/Git |
+| Policy Registry | Policy versions, status and approval metadata | Postgres/Git |
+| Workflow Registry | Workflow graph versions and compatibility metadata | Postgres/Git |
+| Artifact Graph | Dependency and impact-analysis edges | Postgres graph tables or graph DB |
 | State Store | Runtime state | Postgres/Redis |
 | Checkpoint Store | Durable checkpoints | Postgres |
 | Audit Store | Immutable audit events | Postgres/EventStore/Kafka + object store |
@@ -310,4 +373,3 @@ MVP can start with CLI-first:
 6. YAML artifacts.
 
 REST can be introduced once the runtime and local artifact model are stable.
-

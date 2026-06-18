@@ -34,6 +34,21 @@ This checklist defines the minimum gates for moving Agent Foundry components fro
 - [ ] Skill security review
 - [ ] Skill compatibility validation
 
+## Artifact Management
+
+- [ ] Unified artifact registry
+- [ ] Skill lifecycle commands
+- [ ] Policy lifecycle commands
+- [ ] Workflow lifecycle commands
+- [ ] Artifact publish gates
+- [ ] Artifact deprecation workflow
+- [ ] Artifact version bump workflow
+- [ ] Artifact impact analysis
+- [ ] Artifact dependency graph
+- [ ] Immutable published artifact versions
+- [ ] Migration guidance for deprecated artifacts
+- [ ] Historical reproducibility for sessions created with older artifact versions
+
 ## Capabilities, Tools and MCP
 
 - [ ] Capability contract registry
@@ -142,4 +157,3 @@ Production release requires:
 6. Rollback procedure is tested.
 7. Operations owner accepts runbooks.
 8. Security owner accepts threat controls.
-

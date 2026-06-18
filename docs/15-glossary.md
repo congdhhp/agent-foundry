@@ -14,6 +14,7 @@
 | A2A | Agent-to-Agent protocol/plane for delegating work to independent remote agents |
 | Approval | Structured human decision required before executing a risky action |
 | Artifact | Versioned object such as agent, skill, capability, policy, workflow or eval |
+| Artifact Management Plane | Control-plane capability for creating, validating, publishing, versioning, deprecating and impact-analyzing artifacts |
 | Audit Event | Append-only security/compliance event |
 | Capability Contract | Versioned abstract API required by skills and implemented by providers |
 | Capability Binding | Mapping from capability contract to provider/tool implementation |
@@ -63,4 +64,3 @@
 | Verified conclusion | Supported by sufficient evidence |
 | Recommendation | Suggested next action with risk/policy context |
 | Assumption | Explicitly stated uncertain premise |
-
