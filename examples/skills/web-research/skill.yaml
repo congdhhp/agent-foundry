@@ -21,6 +21,9 @@ requires:
     - web.fetch@1.0
     - citation.extract@1.0
 optional_capabilities: []
-default_workflow: research_graph@1.0.0
+workflow_hints:
+  default: research_graph@1.0.0
+  compatible:
+    - general_reasoning_graph@1.0.0
 output_schema: research_report@1.0.0
 

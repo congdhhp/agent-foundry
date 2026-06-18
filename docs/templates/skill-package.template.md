@@ -37,7 +37,9 @@ requires:
 
 optional_capabilities: []
 
-default_workflow: general_reasoning_graph@1.0.0
+workflow_hints:
+  default: general_reasoning_graph@1.0.0
+  compatible: []
 output_schema: example_output@1.0.0
 ```
 
@@ -74,4 +76,3 @@ Do not use this skill when...
 - Do not execute side effects.
 - Do not expose secrets.
 ```
-

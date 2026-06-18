@@ -147,6 +147,25 @@ class SkillRequires(StrictModel):
         return value
 
 
+class SkillWorkflowHints(StrictModel):
+    default: str | None = None
+    compatible: list[str] = Field(default_factory=list)
+
+    @field_validator("default")
+    @classmethod
+    def validate_default(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        return _validate_artifact_ref(value, "workflow_hints.default")
+
+    @field_validator("compatible")
+    @classmethod
+    def validate_compatible(cls, value: list[str]) -> list[str]:
+        for workflow in value:
+            _validate_artifact_ref(workflow, "workflow_hints.compatible")
+        return value
+
+
 class SkillManifest(StrictModel):
     id: str
     version: str
@@ -158,7 +177,8 @@ class SkillManifest(StrictModel):
     triggers: SkillTriggers = Field(default_factory=SkillTriggers)
     requires: SkillRequires = Field(default_factory=SkillRequires)
     optional_capabilities: list[str] = Field(default_factory=list)
-    default_workflow: str
+    default_workflow: str | None = None
+    workflow_hints: SkillWorkflowHints = Field(default_factory=SkillWorkflowHints)
     output_schema: str
 
     @field_validator("version")
@@ -175,10 +195,17 @@ class SkillManifest(StrictModel):
             _validate_capability_ref(capability, "optional_capabilities")
         return value
 
-    @field_validator("default_workflow", "output_schema")
+    @field_validator("default_workflow")
     @classmethod
-    def validate_artifact_refs(cls, value: str, info: Any) -> str:
-        return _validate_artifact_ref(value, info.field_name)
+    def validate_optional_artifact_ref(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        return _validate_artifact_ref(value, "default_workflow")
+
+    @field_validator("output_schema")
+    @classmethod
+    def validate_output_schema(cls, value: str) -> str:
+        return _validate_artifact_ref(value, "output_schema")
 
 
 class VersionedMetadata(StrictModel):

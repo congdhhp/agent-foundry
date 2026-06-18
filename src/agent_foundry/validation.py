@@ -83,6 +83,12 @@ def artifact_summary(artifact: BaseModel) -> dict[str, Any]:
             "workflow": artifact.spec.workflow,
         }
     if isinstance(artifact, SkillManifest):
+        workflow_hints = []
+        if artifact.default_workflow is not None:
+            workflow_hints.append(artifact.default_workflow)
+        if artifact.workflow_hints.default is not None:
+            workflow_hints.append(artifact.workflow_hints.default)
+        workflow_hints.extend(artifact.workflow_hints.compatible)
         return {
             "type": "skill",
             "id": artifact.id,
@@ -90,6 +96,7 @@ def artifact_summary(artifact: BaseModel) -> dict[str, Any]:
             "risk_level": artifact.risk_level,
             "lifecycle_status": artifact.lifecycle_status,
             "required_capabilities": len(artifact.requires.capabilities),
+            "workflow_hints": list(dict.fromkeys(workflow_hints)),
         }
     if isinstance(artifact, CapabilityContractManifest):
         return {

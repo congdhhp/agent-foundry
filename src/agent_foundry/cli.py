@@ -166,6 +166,7 @@ def _skill(args: argparse.Namespace) -> int:
             owner=args.owner,
             capabilities=args.capability,
             workflow=args.workflow,
+            compatible_workflows=args.compatible_workflow,
             output_schema=args.output_schema,
             overwrite=args.overwrite,
         )
@@ -583,7 +584,16 @@ def build_parser() -> argparse.ArgumentParser:
     skill_create.add_argument("--description")
     skill_create.add_argument("--owner", default="local-user")
     skill_create.add_argument("--capability", action="append", default=[])
-    skill_create.add_argument("--workflow", default="general_reasoning_graph@1.0.0")
+    skill_create.add_argument(
+        "--workflow",
+        help="Optional recommended workflow hint for this skill.",
+    )
+    skill_create.add_argument(
+        "--compatible-workflow",
+        action="append",
+        default=[],
+        help="Optional workflow known to be compatible with this skill.",
+    )
     skill_create.add_argument("--output-schema")
     skill_create.add_argument("--overwrite", action="store_true")
     skill_inspect = skill_subparsers.add_parser("inspect", help="Inspect a skill")

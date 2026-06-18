@@ -5,7 +5,7 @@
 
 ## Purpose
 
-Skills are the primary unit of reusable agent capability. A skill packages operational knowledge, workflow guidance, required capabilities, safety constraints, output expectations and evals.
+Skills are the primary unit of reusable agent capability. A skill packages operational knowledge, optional workflow hints, required capabilities, safety constraints, output expectations and evals.
 
 A skill is not just a prompt. It is a governed, versioned artifact.
 
@@ -15,7 +15,7 @@ A production skill must answer:
 
 1. When should this skill be used?
 2. What task pattern does it solve?
-3. What workflow should the runtime follow?
+3. What workflow hints or workflow fragments may help agents use it?
 4. What capability contracts are required?
 5. What policies or approvals are relevant?
 6. What output schema must be produced?
@@ -105,9 +105,14 @@ optional_capabilities:
   - message.draft@1.0
   - postmortem.write@1.0
 
-default_workflow: incident_triage_graph@1.0.0
+workflow_hints:
+  default: incident_triage_graph@1.0.0
+  compatible:
+    - general_reasoning_graph@1.0.0
 output_schema: incident_analysis_report@1.0.0
 ```
+
+Workflow hints do not make the skill belong to a workflow. They are compatibility metadata. The agent manifest chooses the execution workflow that will actually run.
 
 ## `SKILL.md` Authoring Standard
 
@@ -242,4 +247,3 @@ For MVP, implement a local skill loader that:
 4. Resolves required capabilities.
 5. Exposes skill metadata to the selection engine.
 6. Records selected skill IDs in runtime state and audit events.
-

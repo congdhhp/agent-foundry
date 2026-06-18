@@ -56,13 +56,47 @@
       },
       "title": "SkillTriggers",
       "type": "object"
+    },
+    "SkillWorkflowHints": {
+      "additionalProperties": false,
+      "properties": {
+        "compatible": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Compatible",
+          "type": "array"
+        },
+        "default": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Default"
+        }
+      },
+      "title": "SkillWorkflowHints",
+      "type": "object"
     }
   },
   "additionalProperties": false,
   "properties": {
     "default_workflow": {
-      "title": "Default Workflow",
-      "type": "string"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Default Workflow"
     },
     "description": {
       "title": "Description",
@@ -106,6 +140,9 @@
     "version": {
       "title": "Version",
       "type": "string"
+    },
+    "workflow_hints": {
+      "$ref": "#/$defs/SkillWorkflowHints"
     }
   },
   "required": [
@@ -116,7 +153,6 @@
     "owner",
     "risk_level",
     "lifecycle_status",
-    "default_workflow",
     "output_schema"
   ],
   "title": "SkillManifest",

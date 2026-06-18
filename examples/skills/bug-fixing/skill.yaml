@@ -22,6 +22,8 @@ requires:
     - shell.run@1.0
     - git.diff@1.0
 optional_capabilities: []
-default_workflow: coding_task_graph@1.0.0
+workflow_hints:
+  default: coding_task_graph@1.0.0
+  compatible:
+    - general_reasoning_graph@1.0.0
 output_schema: coding_task_report@1.0.0
-

@@ -74,7 +74,7 @@ The platform should not rely on ad hoc edits to production artifacts. File-based
 Skill management commands should support:
 
 ```bash
-agent-foundry skill create <skill-id>
+agent-foundry skill create <skill-id> [--workflow <workflow-hint>] [--compatible-workflow <workflow-ref>]
 agent-foundry skill list
 agent-foundry skill inspect <skill-ref>
 agent-foundry skill validate <skill-ref-or-path>
@@ -89,7 +89,7 @@ Skill publish gates:
 1. Metadata schema is valid.
 2. `SKILL.md` exists and passes instruction linting.
 3. Required capabilities exist.
-4. Referenced default workflow exists.
+4. Referenced workflow hints exist, when provided.
 5. Output schema exists.
 6. Golden evals pass.
 7. Safety evals pass for medium or higher risk skills.
@@ -268,7 +268,7 @@ agent-foundry artifacts inspect <kind> <target>
 agent-foundry artifacts impact <kind> <target>
 agent-foundry artifacts rebuild-index
 
-agent-foundry skill create <skill-id>
+agent-foundry skill create <skill-id> [--workflow <workflow-hint>] [--compatible-workflow <workflow-ref>]
 agent-foundry skill list
 agent-foundry skill inspect <skill-ref>
 agent-foundry skill validate <skill-ref-or-path>

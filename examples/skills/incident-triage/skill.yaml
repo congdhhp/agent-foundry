@@ -23,6 +23,8 @@ requires:
     - traces.search@1.0
     - deployments.read@1.0
 optional_capabilities: []
-default_workflow: incident_triage_graph@1.0.0
+workflow_hints:
+  default: incident_triage_graph@1.0.0
+  compatible:
+    - general_reasoning_graph@1.0.0
 output_schema: incident_analysis_report@1.0.0
-

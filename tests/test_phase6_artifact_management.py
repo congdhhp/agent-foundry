@@ -30,12 +30,14 @@ def test_created_skill_can_be_validated_and_attached_to_agent(tmp_path: Path) ->
         description="Research topics with citation evidence.",
         owner="test-user",
         capabilities=["web.search@1.0", "web.fetch@1.0", "citation.extract@1.0"],
-        workflow="research_graph@1.0.0",
     )
     validation = manager.validate_artifact("skill", "custom-research@1.0.0")
+    skill_manifest = load_document(skill_dir / "skill.yaml")
 
     assert validation.valid
     assert skill_dir.exists()
+    assert "default_workflow" not in skill_manifest
+    assert "workflow_hints" not in skill_manifest
     assert (store_root / "artifact-index" / "index.json").exists()
 
     agent_path = AgentFactory(registry_root, store_root).create(
@@ -56,6 +58,32 @@ def test_created_skill_can_be_validated_and_attached_to_agent(tmp_path: Path) ->
         "web.fetch@1.0": "browser.fetch",
         "citation.extract@1.0": "browser.extract",
     }
+
+
+def test_skill_workflow_is_an_optional_hint(tmp_path: Path) -> None:
+    registry_root = _copy_registry(tmp_path)
+    manager = ArtifactManager(registry_root, tmp_path / ".agent")
+
+    skill_dir = manager.create_skill(
+        "workflow-hinted-skill",
+        capabilities=["web.search@1.0"],
+        workflow="research_graph@1.0.0",
+        compatible_workflows=["general_reasoning_graph@1.0.0"],
+    )
+    validation = manager.validate_artifact("skill", "workflow-hinted-skill@1.0.0")
+    manifest = load_document(skill_dir / "skill.yaml")
+    impact = manager.impact("skill", "workflow-hinted-skill@1.0.0")
+
+    assert validation.valid
+    assert "default_workflow" not in manifest
+    assert manifest["workflow_hints"] == {
+        "default": "research_graph@1.0.0",
+        "compatible": ["general_reasoning_graph@1.0.0"],
+    }
+    assert impact["dependencies"]["workflows"] == [
+        "research_graph@1.0.0",
+        "general_reasoning_graph@1.0.0",
+    ]
 
 
 def test_artifact_lifecycle_publish_deprecate_and_version(tmp_path: Path) -> None:

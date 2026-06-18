@@ -29,6 +29,7 @@ classDiagram
         owner
         risk_level
         lifecycle_status
+        workflow_hints
     }
 
     class CapabilityContract {
@@ -230,4 +231,3 @@ Compatibility guidance:
 | Policy | scope-mode | `production-read-mostly` |
 | Workflow | purpose_graph | `incident_triage_graph` |
 | Eval | artifact-evals | `sre-monitoring-agent-evals` |
-

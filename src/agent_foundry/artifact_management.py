@@ -120,7 +120,8 @@ class ArtifactManager:
         description: str | None = None,
         owner: str = "local-user",
         capabilities: list[str] | None = None,
-        workflow: str = "general_reasoning_graph@1.0.0",
+        workflow: str | None = None,
+        compatible_workflows: list[str] | None = None,
         output_schema: str | None = None,
         overwrite: bool = False,
     ) -> Path:
@@ -141,9 +142,15 @@ class ArtifactManager:
             "triggers": {"intents": [], "keywords": []},
             "requires": {"capabilities": capabilities},
             "optional_capabilities": [],
-            "default_workflow": workflow,
             "output_schema": output_schema_ref,
         }
+        workflow_hints: dict[str, Any] = {}
+        if workflow is not None:
+            workflow_hints["default"] = workflow
+        if compatible_workflows:
+            workflow_hints["compatible"] = compatible_workflows
+        if workflow_hints:
+            manifest["workflow_hints"] = workflow_hints
         (skill_dir / "skill.yaml").write_text(dump_yaml(manifest), encoding="utf-8")
         (skill_dir / "SKILL.md").write_text(
             f"# {manifest['name']}\n\nDescribe how this skill should solve tasks.\n",
@@ -701,7 +708,7 @@ class ArtifactManager:
                     *artifact.requires.capabilities,
                     *artifact.optional_capabilities,
                 ],
-                "workflows": [artifact.default_workflow],
+                "workflows": self._skill_workflow_refs(artifact),
                 "output_schemas": [artifact.output_schema],
             }
         if isinstance(artifact, PolicyManifest):
@@ -742,11 +749,21 @@ class ArtifactManager:
                 self.registry.load_capability(capability_ref)
             except Exception as exc:  # noqa: BLE001
                 errors.append(f"Capability cannot be resolved: {capability_ref}: {exc}")
-        try:
-            self.registry.load_workflow(skill.default_workflow)
-        except Exception as exc:  # noqa: BLE001
-            errors.append(f"Default workflow cannot be resolved: {skill.default_workflow}: {exc}")
+        for workflow_ref in self._skill_workflow_refs(skill):
+            try:
+                self.registry.load_workflow(workflow_ref)
+            except Exception as exc:  # noqa: BLE001
+                errors.append(f"Workflow hint cannot be resolved: {workflow_ref}: {exc}")
         return errors
+
+    def _skill_workflow_refs(self, skill: SkillManifest) -> list[str]:
+        refs: list[str] = []
+        if skill.default_workflow is not None:
+            refs.append(skill.default_workflow)
+        if skill.workflow_hints.default is not None:
+            refs.append(skill.workflow_hints.default)
+        refs.extend(skill.workflow_hints.compatible)
+        return list(dict.fromkeys(refs))
 
     def _validate_policy_dependencies(self, policy: PolicyManifest) -> list[str]:
         errors: list[str] = []

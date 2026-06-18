@@ -144,7 +144,7 @@ Use Phase 6 artifact management commands:
 
 ```bash
 agent-foundry artifacts list
-agent-foundry skill create my-research-skill --capability web.search@1.0 --workflow research_graph@1.0.0
+agent-foundry skill create my-research-skill --capability web.search@1.0
 agent-foundry skill validate my-research-skill@1.0.0
 agent-foundry skill impact web-research@1.0.0
 agent-foundry policy simulate read-only@1.0.0 --capability web.search@1.0
@@ -157,7 +157,7 @@ Create and publish a local agent:
 agent-foundry agent create my-research-agent \
   --name "My Research Agent" \
   --purpose "Research topics with citations" \
-  --skill web-research@1.0.0 \
+  --skill my-research-skill@1.0.0 \
   --policy read-only@1.0.0 \
   --workflow research_graph@1.0.0
 

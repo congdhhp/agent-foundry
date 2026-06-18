@@ -114,11 +114,18 @@ class AgentFactory:
         skill_details = []
         for skill_ref in agent.spec.skills:
             package = self.skill_registry.load_package(skill_ref)
+            workflow_hints = []
+            if package.manifest.default_workflow is not None:
+                workflow_hints.append(package.manifest.default_workflow)
+            if package.manifest.workflow_hints.default is not None:
+                workflow_hints.append(package.manifest.workflow_hints.default)
+            workflow_hints.extend(package.manifest.workflow_hints.compatible)
             skill_details.append(
                 {
                     "skill": package.ref,
                     "description": package.manifest.description,
                     "required_capabilities": package.manifest.requires.capabilities,
+                    "workflow_hints": list(dict.fromkeys(workflow_hints)),
                     "package_path": str(package.root),
                 }
             )
