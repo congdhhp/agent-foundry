@@ -82,6 +82,7 @@ class AgentMetadata(StrictModel):
     id: str
     name: str
     owner: str
+    status: str = "draft"
     labels: dict[str, str] = Field(default_factory=dict)
 
 

@@ -21,6 +21,11 @@
         "owner": {
           "title": "Owner",
           "type": "string"
+        },
+        "status": {
+          "default": "draft",
+          "title": "Status",
+          "type": "string"
         }
       },
       "required": [

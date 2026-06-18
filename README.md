@@ -128,6 +128,21 @@ agent-foundry tools validate
 agent-foundry tools bindings examples/agents/research-agent.yaml
 ```
 
+Create and publish a local agent:
+
+```bash
+agent-foundry agent create my-research-agent \
+  --name "My Research Agent" \
+  --purpose "Research topics with citations" \
+  --skill web-research@1.0.0 \
+  --policy read-only@1.0.0 \
+  --workflow research_graph@1.0.0
+
+agent-foundry agent inspect my-research-agent
+agent-foundry agent publish my-research-agent --eval examples/evals/research_basic.yaml
+agent-foundry run .agent/agents/my-research-agent.yaml "Research capability contracts"
+```
+
 Inspect an artifact:
 
 ```bash

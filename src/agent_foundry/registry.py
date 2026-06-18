@@ -31,6 +31,9 @@ class LocalRegistry:
         path = Path(path_or_ref)
         if path.exists():
             return self._load_file(path, AgentManifest, "agent")
+        local_path = self.root / ".agent" / "agents" / f"{path_or_ref}.yaml"
+        if local_path.exists():
+            return self._load_file(local_path, AgentManifest, "agent")
         ref = ArtifactRef.parse(str(path_or_ref))
         return self._find_by_ref(self.examples_dir / "agents", ref, AgentManifest, "agent")
 

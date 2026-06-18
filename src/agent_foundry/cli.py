@@ -6,6 +6,7 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
+from .agent_factory import AgentCreateRequest, AgentFactory
 from .agent_validation import AgentDeepValidator
 from .evals import EvalRunner
 from .loader import dump_json, load_document
@@ -131,8 +132,40 @@ def _skills(args: argparse.Namespace) -> int:
 
 
 def _agent(args: argparse.Namespace) -> int:
+    factory = AgentFactory(args.registry_root, args.store)
+    if args.agent_command == "create":
+        labels = _parse_labels(args.label)
+        path = factory.create(
+            AgentCreateRequest(
+                agent_id=args.agent_id,
+                name=args.name,
+                purpose=args.purpose,
+                owner=args.owner,
+                skills=args.skill,
+                policy=args.policy,
+                workflow=args.workflow,
+                template=args.template,
+                model_policy=args.model_policy,
+                eval_profile=args.eval_profile,
+                labels=labels,
+            ),
+            overwrite=args.overwrite,
+        )
+        print(dump_json({"created": True, "path": str(path)}))
+        return 0
+    if args.agent_command == "list":
+        print(dump_json(factory.list_agents()))
+        return 0
+    if args.agent_command == "inspect":
+        print(dump_json(factory.inspect(args.agent)))
+        return 0
     if args.agent_command == "validate":
-        result = AgentDeepValidator(args.registry_root).validate(args.agent)
+        target: str | Path = args.agent
+        try:
+            target = factory.resolve_agent_path(args.agent)
+        except FileNotFoundError:
+            target = args.agent
+        result = AgentDeepValidator(args.registry_root).validate(target)
         print(
             dump_json(
                 {
@@ -143,7 +176,31 @@ def _agent(args: argparse.Namespace) -> int:
             )
         )
         return 0 if result.valid else 1
+    if args.agent_command == "publish":
+        result = factory.publish(args.agent, args.eval)
+        print(
+            dump_json(
+                {
+                    "published": result.published,
+                    "path": str(result.path),
+                    "errors": result.errors,
+                    "warnings": result.warnings,
+                    "eval_reports": result.eval_reports,
+                }
+            )
+        )
+        return 0 if result.published else 1
     raise ValueError(f"Unknown agent command: {args.agent_command}")
+
+
+def _parse_labels(values: list[str]) -> dict[str, str]:
+    labels: dict[str, str] = {}
+    for value in values:
+        if "=" not in value:
+            raise ValueError(f"Label must look like key=value: {value}")
+        key, label_value = value.split("=", 1)
+        labels[key] = label_value
+    return labels
 
 
 def _eval(args: argparse.Namespace) -> int:
@@ -275,13 +332,34 @@ def build_parser() -> argparse.ArgumentParser:
     skills_validate.add_argument("skill", help="Skill reference or package path")
     skills_parser.set_defaults(func=_skills)
 
-    agent_parser = subparsers.add_parser("agent", help="Agent validation commands")
+    agent_parser = subparsers.add_parser("agent", help="Agent factory commands")
     agent_parser.add_argument("--registry-root", default=".")
+    agent_parser.add_argument("--store", default=".agent")
     agent_subparsers = agent_parser.add_subparsers(dest="agent_command", required=True)
+    agent_create = agent_subparsers.add_parser("create", help="Create a local agent")
+    agent_create.add_argument("agent_id")
+    agent_create.add_argument("--name", required=True)
+    agent_create.add_argument("--purpose", required=True)
+    agent_create.add_argument("--owner", default="local-user")
+    agent_create.add_argument("--skill", action="append", required=True)
+    agent_create.add_argument("--policy", required=True)
+    agent_create.add_argument("--workflow", required=True)
+    agent_create.add_argument("--template", default="generic-task-agent@1.0.0")
+    agent_create.add_argument("--model-policy", default="default-model-policy@1.0.0")
+    agent_create.add_argument("--eval-profile")
+    agent_create.add_argument("--label", action="append", default=[])
+    agent_create.add_argument("--overwrite", action="store_true")
+
+    agent_subparsers.add_parser("list", help="List locally created agents")
+    agent_inspect = agent_subparsers.add_parser("inspect", help="Inspect local agent composition")
+    agent_inspect.add_argument("agent")
     agent_validate = agent_subparsers.add_parser(
         "validate", help="Deep-validate an agent and its bindings"
     )
     agent_validate.add_argument("agent", help="Agent manifest path or agent reference")
+    agent_publish = agent_subparsers.add_parser("publish", help="Publish a local agent")
+    agent_publish.add_argument("agent", help="Agent id or manifest path")
+    agent_publish.add_argument("--eval", action="append", default=[])
     agent_parser.set_defaults(func=_agent)
 
     eval_parser = subparsers.add_parser("eval", help="Run local eval cases")
