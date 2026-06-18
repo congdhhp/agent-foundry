@@ -1,0 +1,15 @@
+{
+  "id": "incident_analysis_report",
+  "version": "1.0.0",
+  "type": "object",
+  "required": ["summary", "timeline", "evidence_refs", "hypotheses", "confidence"],
+  "properties": {
+    "summary": { "type": "string" },
+    "timeline": { "type": "array" },
+    "evidence_refs": { "type": "array" },
+    "hypotheses": { "type": "array" },
+    "confidence": { "type": "string" },
+    "next_actions": { "type": "array" }
+  }
+}
+

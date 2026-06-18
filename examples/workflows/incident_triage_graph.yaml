@@ -1,0 +1,26 @@
+id: incident_triage_graph
+version: 1.0.0
+runtime: langgraph
+state_schema: AgentState
+nodes:
+  - id: scope_incident
+    type: llm_reasoning
+  - id: collect_deployments
+    type: capability_call
+    capability: deployments.read@1.0
+  - id: collect_metrics
+    type: capability_call
+    capability: metrics.query@1.0
+  - id: collect_logs
+    type: capability_call
+    capability: logs.search@1.0
+  - id: collect_traces
+    type: capability_call
+    capability: traces.search@1.0
+  - id: correlate_timeline
+    type: llm_reasoning
+  - id: verify_hypotheses
+    type: evaluator
+  - id: compose_report
+    type: output_composer
+

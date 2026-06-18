@@ -1,0 +1,29 @@
+apiVersion: agents.platform/v1
+kind: Agent
+metadata:
+  id: monitoring-agent
+  name: Monitoring Agent
+  owner: sre-platform-team
+  labels:
+    domain: sre
+    environment: local
+spec:
+  template: generic-task-agent@1.0.0
+  purpose: Investigate production-style incidents using metrics, logs and traces.
+  skills:
+    - incident-triage@1.0.0
+  capabilityBindings:
+    metrics.query@1.0: observability.query_metrics
+    logs.search@1.0: observability.search_logs
+    traces.search@1.0: observability.search_traces
+    deployments.read@1.0: observability.read_deployments
+  knowledgeScopes:
+    - service_runbooks
+  memoryScopes:
+    - session
+    - task
+  policy: observability-read-only@1.0.0
+  workflow: incident_triage_graph@1.0.0
+  modelPolicy: default-model-policy@1.0.0
+  evalProfile: monitoring-agent-evals@1.0.0
+

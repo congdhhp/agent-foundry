@@ -6,9 +6,12 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
+from .agent_validation import AgentDeepValidator
+from .evals import EvalRunner
 from .loader import dump_json, load_document
 from .runtime import AgentRuntime, RuntimeOptions
 from .schemas import export_schemas, schema_names
+from .skills import SkillRegistry
 from .storage import LocalSessionStore
 from .validation import artifact_summary, validate_document
 
@@ -81,6 +84,75 @@ def _show(args: argparse.Namespace) -> int:
     return 0
 
 
+def _skills(args: argparse.Namespace) -> int:
+    registry = SkillRegistry(args.registry_root)
+    if args.skills_command == "list":
+        rows = [
+            {
+                "skill": package.ref,
+                "risk_level": package.manifest.risk_level,
+                "lifecycle_status": package.manifest.lifecycle_status,
+                "required_capabilities": package.manifest.requires.capabilities,
+            }
+            for package in registry.list_packages()
+        ]
+        print(dump_json(rows))
+        return 0
+    if args.skills_command == "inspect":
+        package = registry.load_package(args.skill)
+        print(
+            dump_json(
+                {
+                    "skill": package.ref,
+                    "path": str(package.root),
+                    "description": package.manifest.description,
+                    "required_capabilities": package.manifest.requires.capabilities,
+                    "eval_files": [str(path) for path in package.eval_files],
+                }
+            )
+        )
+        return 0
+    if args.skills_command == "validate":
+        result = registry.validate_package(args.skill)
+        print(
+            dump_json(
+                {
+                    "path": str(result.path),
+                    "valid": result.valid,
+                    "skill_ref": result.skill_ref,
+                    "errors": result.errors,
+                    "warnings": result.warnings,
+                }
+            )
+        )
+        return 0 if result.valid else 1
+    raise ValueError(f"Unknown skills command: {args.skills_command}")
+
+
+def _agent(args: argparse.Namespace) -> int:
+    if args.agent_command == "validate":
+        result = AgentDeepValidator(args.registry_root).validate(args.agent)
+        print(
+            dump_json(
+                {
+                    "valid": result.valid,
+                    "errors": result.errors,
+                    "warnings": result.warnings,
+                }
+            )
+        )
+        return 0 if result.valid else 1
+    raise ValueError(f"Unknown agent command: {args.agent_command}")
+
+
+def _eval(args: argparse.Namespace) -> int:
+    if args.eval_command == "run":
+        report = EvalRunner(args.registry_root, args.store).run(args.eval_case, args.agent)
+        print(dump_json(report.to_dict()))
+        return 0 if report.passed else 1
+    raise ValueError(f"Unknown eval command: {args.eval_command}")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="agent-foundry")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -127,6 +199,34 @@ def build_parser() -> argparse.ArgumentParser:
     )
     show_parser.add_argument("--store", default=".agent")
     show_parser.set_defaults(func=_show)
+
+    skills_parser = subparsers.add_parser("skills", help="Manage local skill packages")
+    skills_parser.add_argument("--registry-root", default=".")
+    skills_subparsers = skills_parser.add_subparsers(dest="skills_command", required=True)
+    skills_subparsers.add_parser("list", help="List local skills")
+    skills_inspect = skills_subparsers.add_parser("inspect", help="Inspect a skill package")
+    skills_inspect.add_argument("skill", help="Skill reference or package path")
+    skills_validate = skills_subparsers.add_parser("validate", help="Validate a skill package")
+    skills_validate.add_argument("skill", help="Skill reference or package path")
+    skills_parser.set_defaults(func=_skills)
+
+    agent_parser = subparsers.add_parser("agent", help="Agent validation commands")
+    agent_parser.add_argument("--registry-root", default=".")
+    agent_subparsers = agent_parser.add_subparsers(dest="agent_command", required=True)
+    agent_validate = agent_subparsers.add_parser(
+        "validate", help="Deep-validate an agent and its bindings"
+    )
+    agent_validate.add_argument("agent", help="Agent manifest path or agent reference")
+    agent_parser.set_defaults(func=_agent)
+
+    eval_parser = subparsers.add_parser("eval", help="Run local eval cases")
+    eval_parser.add_argument("--registry-root", default=".")
+    eval_parser.add_argument("--store", default=".agent/evals")
+    eval_subparsers = eval_parser.add_subparsers(dest="eval_command", required=True)
+    eval_run = eval_subparsers.add_parser("run", help="Run an eval case")
+    eval_run.add_argument("eval_case")
+    eval_run.add_argument("--agent", required=True)
+    eval_parser.set_defaults(func=_eval)
 
     return parser
 

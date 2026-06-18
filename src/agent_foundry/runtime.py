@@ -4,10 +4,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .agent_validation import AgentDeepValidator
 from .evidence import EvidenceManager
 from .models import AgentManifest, PolicyDecision, WorkflowNodeType
 from .policy import PolicyEngine
 from .registry import LocalRegistry
+from .skills import SkillRegistry, SkillSelector
 from .storage import LocalSessionStore, new_task_id
 from .tools import ToolExecutor
 
@@ -24,6 +26,9 @@ class AgentRuntime:
     def __init__(self, options: RuntimeOptions | None = None) -> None:
         self.options = options or RuntimeOptions()
         self.registry = LocalRegistry(self.options.registry_root)
+        self.skill_registry = SkillRegistry(self.options.registry_root)
+        self.skill_selector = SkillSelector()
+        self.agent_validator = AgentDeepValidator(self.options.registry_root)
         self.store = LocalSessionStore(self.options.store_root)
         self.policy_engine = PolicyEngine()
         self.evidence_manager = EvidenceManager()
@@ -32,9 +37,19 @@ class AgentRuntime:
     def run(self, agent_path_or_ref: str | Path, task_input: str) -> dict[str, Any]:
         task_id = new_task_id()
         agent = self.registry.load_agent(agent_path_or_ref)
+        validation = self.agent_validator.validate(agent_path_or_ref)
+        if not validation.valid:
+            raise ValueError(f"Agent validation failed: {validation.errors}")
         workflow = self.registry.load_workflow(agent.spec.workflow)
         policy = self.registry.load_policy(agent.spec.policy)
-        skills = [self.registry.load_skill(skill_ref) for skill_ref in agent.spec.skills]
+        skill_packages = [
+            self.skill_registry.load_package(skill_ref) for skill_ref in agent.spec.skills
+        ]
+        skill_selections = self.skill_selector.select(
+            agent,
+            [package.manifest for package in skill_packages],
+            task_input,
+        )
 
         state: dict[str, Any] = {
             "task_id": task_id,
@@ -42,7 +57,23 @@ class AgentRuntime:
             "workflow_id": f"{workflow.id}@{workflow.version}",
             "input": task_input,
             "status": "running",
-            "selected_skills": [f"{skill.id}@{skill.version}" for skill in skills],
+            "selected_skills": [selection.ref for selection in skill_selections],
+            "skill_context": [
+                {
+                    "skill": package.ref,
+                    "instructions": package.instructions,
+                    "required_capabilities": package.manifest.requires.capabilities,
+                }
+                for package in skill_packages
+            ],
+            "skill_selection": [
+                {
+                    "skill": selection.ref,
+                    "score": selection.score,
+                    "reasons": selection.reasons,
+                }
+                for selection in skill_selections
+            ],
             "observations": [],
             "evidence": [],
             "approvals": [],
@@ -58,7 +89,23 @@ class AgentRuntime:
         self.store.append_event(
             task_id,
             "skill.selected",
-            {"skills": state["selected_skills"]},
+            {
+                "skills": state["selected_skills"],
+                "selection": state["skill_selection"],
+            },
+        )
+        self.store.append_event(
+            task_id,
+            "runtime.context.composed",
+            {
+                "skills": [
+                    {
+                        "skill": item["skill"],
+                        "required_capabilities": item["required_capabilities"],
+                    }
+                    for item in state["skill_context"]
+                ]
+            },
         )
         self._checkpoint(state, "task.started")
 

@@ -1,0 +1,42 @@
+apiVersion: agents.platform/v1
+kind: CapabilityContract
+metadata:
+  id: traces.search
+  version: 1.0.0
+  name: Traces Search
+  owner: sre-platform-team
+spec:
+  category: observability
+  accessType: read
+  riskLevel: low
+  inputSchema:
+    type: object
+    required:
+      - service
+    properties:
+      service:
+        type: string
+      time_range:
+        type: string
+  outputSchema:
+    type: object
+    required:
+      - traces
+      - evidence_id
+      - metadata
+    properties:
+      traces:
+        type: array
+      evidence_id:
+        type: string
+      metadata:
+        type: object
+  semanticContract:
+    guarantees:
+      - Returns trace summaries without mutating systems.
+    constraints:
+      maxTraceCount: 100
+  evidence:
+    creates_evidence: true
+    evidence_type: trace_observation
+

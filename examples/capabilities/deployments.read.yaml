@@ -1,0 +1,40 @@
+apiVersion: agents.platform/v1
+kind: CapabilityContract
+metadata:
+  id: deployments.read
+  version: 1.0.0
+  name: Deployments Read
+  owner: sre-platform-team
+spec:
+  category: deployment
+  accessType: read
+  riskLevel: low
+  inputSchema:
+    type: object
+    properties:
+      service:
+        type: string
+      environment:
+        type: string
+  outputSchema:
+    type: object
+    required:
+      - deployments
+      - evidence_id
+      - metadata
+    properties:
+      deployments:
+        type: array
+      evidence_id:
+        type: string
+      metadata:
+        type: object
+  semanticContract:
+    guarantees:
+      - Reads deployment metadata without mutating deployment state.
+    constraints:
+      maxDeployments: 50
+  evidence:
+    creates_evidence: true
+    evidence_type: deployment_observation
+

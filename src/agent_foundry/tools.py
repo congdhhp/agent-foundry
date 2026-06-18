@@ -35,6 +35,10 @@ class ToolExecutor:
             "file.patch": self._file_patch,
             "shell.run": self._shell_run,
             "git.diff": self._git_diff,
+            "metrics.query": self._metrics_query,
+            "logs.search": self._logs_search,
+            "traces.search": self._traces_search,
+            "deployments.read": self._deployments_read,
         }
         handler = handlers.get(capability_id, self._generic)
         output, summary = handler(task_input, prior_outputs)
@@ -162,6 +166,63 @@ class ToolExecutor:
         }
         return result, "Collected git diff from workspace."
 
+    def _metrics_query(
+        self, task_input: str, prior_outputs: list[dict[str, Any]]
+    ) -> tuple[dict[str, Any], str]:
+        result = {
+            "series": [
+                {"metric": "latency_p95_ms", "points": [120, 180, 430, 510]},
+                {"metric": "http_5xx_rate", "points": [0.01, 0.02, 0.07, 0.08]},
+            ],
+            "metadata": {"mock": True, "task": task_input},
+        }
+        return result, "Collected mock metrics showing latency and 5xx increase."
+
+    def _logs_search(
+        self, task_input: str, prior_outputs: list[dict[str, Any]]
+    ) -> tuple[dict[str, Any], str]:
+        result = {
+            "entries": [
+                {
+                    "service": "checkout",
+                    "level": "error",
+                    "message": "Timeout calling payment dependency after latest deploy.",
+                }
+            ],
+            "metadata": {"mock": True, "redacted": True},
+        }
+        return result, "Collected sanitized mock logs for checkout errors."
+
+    def _traces_search(
+        self, task_input: str, prior_outputs: list[dict[str, Any]]
+    ) -> tuple[dict[str, Any], str]:
+        result = {
+            "traces": [
+                {
+                    "trace_id": "trace_mock_001",
+                    "slow_span": "payment.authorize",
+                    "duration_ms": 940,
+                }
+            ],
+            "metadata": {"mock": True},
+        }
+        return result, "Collected mock traces with slow payment span."
+
+    def _deployments_read(
+        self, task_input: str, prior_outputs: list[dict[str, Any]]
+    ) -> tuple[dict[str, Any], str]:
+        result = {
+            "deployments": [
+                {
+                    "service": "checkout",
+                    "version": "v1.2.3",
+                    "timestamp": "2026-06-18T06:00:00Z",
+                }
+            ],
+            "metadata": {"mock": True},
+        }
+        return result, "Read mock deployment history for checkout service."
+
     def _generic(
         self, task_input: str, prior_outputs: list[dict[str, Any]]
     ) -> tuple[dict[str, Any], str]:
@@ -172,4 +233,3 @@ class ToolExecutor:
         if not str(target).startswith(str(self.workspace)):
             raise ValueError(f"Path escapes workspace: {target}")
         return target
-

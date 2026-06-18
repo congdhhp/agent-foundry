@@ -1,0 +1,30 @@
+apiVersion: agents.platform/v1
+kind: Policy
+metadata:
+  id: observability-read-only
+  version: 1.0.0
+  name: Observability Read Only
+  owner: sre-platform-team
+spec:
+  rules:
+    - match:
+        capability: metrics.query@1.0
+      decision: allow
+    - match:
+        capability: logs.search@1.0
+      decision: allow
+      transforms:
+        - redact_secrets
+    - match:
+        capability: traces.search@1.0
+      decision: allow
+    - match:
+        capability: deployments.read@1.0
+      decision: allow
+    - match:
+        accessType: write
+      decision: deny
+    - match:
+        accessType: execute
+      decision: deny
+

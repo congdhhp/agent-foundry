@@ -1,0 +1,43 @@
+apiVersion: agents.platform/v1
+kind: CapabilityContract
+metadata:
+  id: logs.search
+  version: 1.0.0
+  name: Logs Search
+  owner: sre-platform-team
+spec:
+  category: observability
+  accessType: read
+  riskLevel: medium
+  inputSchema:
+    type: object
+    required:
+      - query
+    properties:
+      query:
+        type: string
+      time_range:
+        type: string
+  outputSchema:
+    type: object
+    required:
+      - entries
+      - evidence_id
+      - metadata
+    properties:
+      entries:
+        type: array
+      evidence_id:
+        type: string
+      metadata:
+        type: object
+  semanticContract:
+    guarantees:
+      - Searches logs and returns sanitized observations.
+    constraints:
+      redactSecrets: true
+      maxPayloadBytes: 1000000
+  evidence:
+    creates_evidence: true
+    evidence_type: log_observation
+

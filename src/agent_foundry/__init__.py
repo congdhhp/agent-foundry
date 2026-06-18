@@ -10,6 +10,7 @@ from .models import (
     WorkflowDefinition,
 )
 from .runtime import AgentRuntime, RuntimeOptions
+from .skills import SkillPackage, SkillRegistry, SkillSelector
 
 __all__ = [
     "AgentRuntime",
@@ -20,6 +21,9 @@ __all__ = [
     "PolicyManifest",
     "RuntimeOptions",
     "SkillManifest",
+    "SkillPackage",
+    "SkillRegistry",
+    "SkillSelector",
     "WorkflowDefinition",
 ]
 

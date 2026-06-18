@@ -116,6 +116,15 @@ agent-foundry show <task_id> events
 agent-foundry show <task_id> evidence
 ```
 
+Use Phase 2 composition commands:
+
+```bash
+agent-foundry skills list
+agent-foundry skills validate examples/skills/web-research
+agent-foundry agent validate examples/agents/research-agent.yaml
+agent-foundry eval run examples/evals/research_basic.yaml --agent examples/agents/research-agent.yaml
+```
+
 Inspect an artifact:
 
 ```bash

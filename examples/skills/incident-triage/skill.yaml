@@ -1,0 +1,28 @@
+id: incident-triage
+version: 1.0.0
+name: Incident Triage
+description: Diagnose production-style incidents using metrics, logs, traces and deployments.
+owner: sre-platform-team
+risk_level: medium
+lifecycle_status: draft
+triggers:
+  intents:
+    - investigate_incident
+    - analyze_alert
+    - diagnose_outage
+  keywords:
+    - incident
+    - alert
+    - outage
+    - latency
+    - error rate
+requires:
+  capabilities:
+    - metrics.query@1.0
+    - logs.search@1.0
+    - traces.search@1.0
+    - deployments.read@1.0
+optional_capabilities: []
+default_workflow: incident_triage_graph@1.0.0
+output_schema: incident_analysis_report@1.0.0
+

@@ -1,0 +1,42 @@
+apiVersion: agents.platform/v1
+kind: CapabilityContract
+metadata:
+  id: metrics.query
+  version: 1.0.0
+  name: Metrics Query
+  owner: sre-platform-team
+spec:
+  category: observability
+  accessType: read
+  riskLevel: low
+  inputSchema:
+    type: object
+    required:
+      - query
+    properties:
+      query:
+        type: string
+      time_range:
+        type: string
+  outputSchema:
+    type: object
+    required:
+      - series
+      - evidence_id
+      - metadata
+    properties:
+      series:
+        type: array
+      evidence_id:
+        type: string
+      metadata:
+        type: object
+  semanticContract:
+    guarantees:
+      - Returns time-series metric observations without mutating systems.
+    constraints:
+      maxTimeRange: 30d
+  evidence:
+    creates_evidence: true
+    evidence_type: metric_observation
+
