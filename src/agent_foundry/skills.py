@@ -47,16 +47,26 @@ class SkillSelection:
 
 
 class SkillRegistry:
-    def __init__(self, root: str | Path = ".") -> None:
+    def __init__(self, root: str | Path = ".", store_root: str | Path | None = None) -> None:
         self.root = Path(root)
-        self.skills_dir = self.root / "examples" / "skills"
+        self.store_root = Path(store_root) if store_root is not None else self.root / ".agent"
+        self.skill_dirs = [
+            self.store_root / "registry" / "skills",
+            self.root / "examples" / "skills",
+        ]
 
     def list_packages(self) -> list[SkillPackage]:
         packages: list[SkillPackage] = []
-        if not self.skills_dir.exists():
-            return packages
-        for skill_dir in sorted(path for path in self.skills_dir.iterdir() if path.is_dir()):
-            packages.append(self.load_package(skill_dir))
+        seen: set[str] = set()
+        for skills_dir in self.skill_dirs:
+            if not skills_dir.exists():
+                continue
+            for skill_dir in sorted(path for path in skills_dir.iterdir() if path.is_dir()):
+                package = self.load_package(skill_dir)
+                if package.ref in seen:
+                    continue
+                seen.add(package.ref)
+                packages.append(package)
         return packages
 
     def load_package(self, path_or_ref: str | Path) -> SkillPackage:
@@ -67,12 +77,13 @@ class SkillRegistry:
                 skill_dir = skill_dir.parent
             return self._load_package_dir(skill_dir)
         ref = ArtifactRef.parse(str(path_or_ref))
-        if not self.skills_dir.exists():
-            raise FileNotFoundError(f"Could not resolve skill package {path_or_ref}")
-        for skill_dir in sorted(path for path in self.skills_dir.iterdir() if path.is_dir()):
-            package = self._load_package_dir(skill_dir)
-            if ref.matches(package.manifest.id, package.manifest.version):
-                return package
+        for skills_dir in self.skill_dirs:
+            if not skills_dir.exists():
+                continue
+            for skill_dir in sorted(path for path in skills_dir.iterdir() if path.is_dir()):
+                package = self._load_package_dir(skill_dir)
+                if ref.matches(package.manifest.id, package.manifest.version):
+                    return package
         raise FileNotFoundError(f"Could not resolve skill package {path_or_ref}")
 
     def validate_package(self, path_or_ref: str | Path) -> SkillPackageValidation:

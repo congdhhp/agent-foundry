@@ -25,10 +25,14 @@ class AgentToolBinding:
 
 
 class ToolProviderRegistry:
-    def __init__(self, root: str | Path = ".") -> None:
-        self.registry = LocalRegistry(root)
+    def __init__(
+        self,
+        root: str | Path = ".",
+        store_root: str | Path | None = None,
+    ) -> None:
+        self.registry = LocalRegistry(root, store_root)
 
-    def list(self) -> list[ToolProviderManifest]:
+    def list_providers(self) -> list[ToolProviderManifest]:
         return self.registry.list_tool_providers()
 
     def inspect(self, provider_id: str) -> ToolProviderManifest:
@@ -37,7 +41,7 @@ class ToolProviderRegistry:
     def validate_all(self) -> ToolProviderValidationResult:
         errors: list[str] = []
         warnings: list[str] = []
-        providers = self.registry.list_tool_providers()
+        providers = self.list_providers()
         if not providers:
             errors.append("No tool providers found")
         for provider in providers:
@@ -95,5 +99,8 @@ class ToolProviderRegistry:
     def _split_provider_tool(self, provider_tool: str) -> tuple[str, str]:
         if "." not in provider_tool:
             return provider_tool, ""
-        return provider_tool.split(".", 1)
+        provider_id, tool_name = provider_tool.split(".", 1)
+        return provider_id, tool_name
 
+    def list(self) -> list[ToolProviderManifest]:
+        return self.list_providers()

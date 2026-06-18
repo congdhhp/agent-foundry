@@ -93,11 +93,12 @@ class ArtifactManager:
         self.registry_root = Path(registry_root)
         self.store_root = Path(store_root)
         self.examples_dir = self.registry_root / "examples"
+        self.local_registry_dir = self.store_root / "registry"
         self.index_dir = self.store_root / "artifact-index"
         self.index_path = self.index_dir / "index.json"
         self.state_path = self.index_dir / "state.json"
-        self.registry = LocalRegistry(self.registry_root)
-        self.skill_registry = SkillRegistry(self.registry_root)
+        self.registry = LocalRegistry(self.registry_root, self.store_root)
+        self.skill_registry = SkillRegistry(self.registry_root, self.store_root)
 
     def list_artifacts(self, kind: str | None = None) -> list[dict[str, Any]]:
         entries = self.discover(kind)
@@ -125,7 +126,7 @@ class ArtifactManager:
         output_schema: str | None = None,
         overwrite: bool = False,
     ) -> Path:
-        skill_dir = self.examples_dir / "skills" / skill_id
+        skill_dir = self.local_registry_dir / "skills" / skill_id
         if skill_dir.exists() and not overwrite:
             raise FileExistsError(f"Skill package already exists: {skill_dir}")
         skill_dir.mkdir(parents=True, exist_ok=True)
@@ -210,7 +211,7 @@ class ArtifactManager:
         deny_risk_level: list[str] | None = None,
         overwrite: bool = False,
     ) -> Path:
-        path = self.examples_dir / "policies" / f"{policy_id}.yaml"
+        path = self.local_registry_dir / "policies" / f"{policy_id}.yaml"
         if path.exists() and not overwrite:
             raise FileExistsError(f"Policy already exists: {path}")
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -256,7 +257,7 @@ class ArtifactManager:
         capabilities: list[str] | None = None,
         overwrite: bool = False,
     ) -> Path:
-        path = self.examples_dir / "workflows" / f"{workflow_id}.yaml"
+        path = self.local_registry_dir / "workflows" / f"{workflow_id}.yaml"
         if path.exists() and not overwrite:
             raise FileExistsError(f"Workflow already exists: {path}")
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -511,6 +512,8 @@ class ArtifactManager:
             "capability": capability_ref,
             "decision": result.decision.value,
             "reason": result.reason,
+            "transforms": result.transforms,
+            "approvers": result.approvers,
         }
         if agent is not None:
             agent_manifest = self.registry.load_agent(agent)
@@ -521,12 +524,21 @@ class ArtifactManager:
         return response
 
     def discover(self, kind: str | None = None) -> list[ArtifactEntry]:
-        kinds = MANAGED_KINDS if kind in {None, "all"} else (kind,)
+        kinds = MANAGED_KINDS if kind in {None, "all"} else (str(kind),)
         state = self._load_state()
         entries: list[ArtifactEntry] = []
         for current_kind in kinds:
             entries.extend(self._discover_kind(current_kind, state))
-        return sorted(entries, key=lambda item: (item.kind, item.ref, str(item.path)))
+        deduped: dict[tuple[str, str], ArtifactEntry] = {}
+        for entry in entries:
+            key = (entry.kind, entry.ref)
+            existing = deduped.get(key)
+            if existing is None or (
+                not existing.source.startswith("local")
+                and entry.source.startswith("local")
+            ):
+                deduped[key] = entry
+        return sorted(deduped.values(), key=lambda item: (item.kind, item.ref, str(item.path)))
 
     def resolve(self, kind: str, target: str | Path) -> ArtifactEntry:
         path = Path(target)
@@ -559,6 +571,7 @@ class ArtifactManager:
         entries: list[ArtifactEntry] = []
         if kind == "agent":
             for directory, source in [
+                (self.local_registry_dir / "agents", "local-registry"),
                 (self.examples_dir / "agents", "registry"),
                 (self.store_root / "agents", "local"),
             ]:
@@ -567,27 +580,49 @@ class ArtifactManager:
                 )
             return entries
         if kind == "skill":
-            skills_dir = self.examples_dir / "skills"
-            if skills_dir.exists():
+            for skills_dir, source in [
+                (self.local_registry_dir / "skills", "local"),
+                (self.examples_dir / "skills", "registry"),
+            ]:
+                if not skills_dir.exists():
+                    continue
                 for manifest_path in sorted(skills_dir.glob("*/skill.yaml")):
                     entry = self._entry_from_path(
-                        "skill", manifest_path, "skill", "registry", state
+                        "skill", manifest_path, "skill", source, state
                     )
                     if entry is not None:
                         entries.append(entry)
             return entries
         mapping = {
-            "policy": (self.examples_dir / "policies", "policy"),
-            "workflow": (self.examples_dir / "workflows", "workflow"),
-            "capability": (self.examples_dir / "capabilities", "capability-contract"),
-            "tool-provider": (self.examples_dir / "tools", "tool-provider"),
-            "eval-suite": (self.examples_dir / "eval-suites", "eval-suite"),
-            "model-policy": (self.examples_dir / "model-policies", "model-policy"),
+            "policy": ("policies", "policy"),
+            "workflow": ("workflows", "workflow"),
+            "capability": ("capabilities", "capability-contract"),
+            "tool-provider": ("tools", "tool-provider"),
+            "eval-suite": ("eval-suites", "eval-suite"),
+            "model-policy": ("model-policies", "model-policy"),
         }
         if kind not in mapping:
             raise ValueError(f"Unknown artifact kind: {kind}")
-        directory, artifact_type = mapping[kind]
-        return self._discover_files(kind, directory, artifact_type, "registry", state)
+        directory_name, artifact_type = mapping[kind]
+        entries.extend(
+            self._discover_files(
+                kind,
+                self.local_registry_dir / directory_name,
+                artifact_type,
+                "local",
+                state,
+            )
+        )
+        entries.extend(
+            self._discover_files(
+                kind,
+                self.examples_dir / directory_name,
+                artifact_type,
+                "registry",
+                state,
+            )
+        )
+        return entries
 
     def _discover_files(
         self,
@@ -782,6 +817,12 @@ class ArtifactManager:
         node_ids = [node.id for node in workflow.nodes]
         if len(node_ids) != len(set(node_ids)):
             errors.append("Workflow node IDs must be unique")
+        node_id_set = set(node_ids)
+        for edge in workflow.edges:
+            if edge.source not in node_id_set:
+                errors.append(f"Workflow edge source does not exist: {edge.source}")
+            if edge.target not in node_id_set:
+                errors.append(f"Workflow edge target does not exist: {edge.target}")
         for node in workflow.nodes:
             if node.capability is None:
                 continue
@@ -825,7 +866,7 @@ class ArtifactManager:
         skill = validate_document(load_document(manifest_path), "skill")
         if not isinstance(skill, SkillManifest):
             raise TypeError(f"{manifest_path} is not a skill manifest")
-        target_dir = self.examples_dir / "skills" / f"{skill.id}-{new_version}"
+        target_dir = self.local_registry_dir / "skills" / f"{skill.id}-{new_version}"
         if target_dir.exists():
             if not overwrite:
                 raise FileExistsError(f"Version target already exists: {target_dir}")

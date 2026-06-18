@@ -36,6 +36,7 @@ def test_created_skill_can_be_validated_and_attached_to_agent(tmp_path: Path) ->
 
     assert validation.valid
     assert skill_dir.exists()
+    assert skill_dir.is_relative_to(store_root / "registry" / "skills")
     assert "default_workflow" not in skill_manifest
     assert "workflow_hints" not in skill_manifest
     assert (store_root / "artifact-index" / "index.json").exists()
@@ -206,3 +207,68 @@ def test_cli_policy_and_artifact_management_smoke(
     policies = json.loads(capsys.readouterr().out)
 
     assert any(policy["ref"] == "cli-read-policy@1.0.0" for policy in policies)
+
+
+def test_cli_init_and_user_registry_skill_flow(tmp_path: Path, capsys) -> None:
+    registry_root = _copy_registry(tmp_path)
+    store_root = tmp_path / ".agent"
+
+    assert (
+        main(
+            [
+                "init",
+                "--registry-root",
+                str(registry_root),
+                "--store",
+                str(store_root),
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+
+    assert (
+        main(
+            [
+                "skill",
+                "--registry-root",
+                str(registry_root),
+                "--store",
+                str(store_root),
+                "create",
+                "cli-local-skill",
+                "--capability",
+                "web.search@1.0",
+            ]
+        )
+        == 0
+    )
+    created = json.loads(capsys.readouterr().out)
+    assert Path(created["path"]).is_relative_to(store_root / "registry" / "skills")
+
+    assert (
+        main(
+            [
+                "agent",
+                "--registry-root",
+                str(registry_root),
+                "--store",
+                str(store_root),
+                "create",
+                "cli-local-agent",
+                "--name",
+                "CLI Local Agent",
+                "--purpose",
+                "Use a locally created skill.",
+                "--skill",
+                "cli-local-skill@1.0.0",
+                "--policy",
+                "read-only@1.0.0",
+                "--workflow",
+                "general_reasoning_graph@1.0.0",
+            ]
+        )
+        == 0
+    )
+    agent = json.loads(capsys.readouterr().out)
+    assert Path(agent["path"]) == store_root / "agents" / "cli-local-agent.yaml"

@@ -25,6 +25,26 @@
           "title": "Defaultprovider",
           "type": "string"
         },
+        "fallbackModels": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Fallbackmodels",
+          "type": "array"
+        },
+        "maxOutputTokens": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Maxoutputtokens"
+        },
         "maxPromptChars": {
           "default": 12000,
           "minimum": 1,
@@ -35,6 +55,13 @@
           "default": true,
           "title": "Redactsecrets",
           "type": "boolean"
+        },
+        "retryCount": {
+          "default": 0,
+          "maximum": 5,
+          "minimum": 0,
+          "title": "Retrycount",
+          "type": "integer"
         },
         "temperature": {
           "default": 0.2,

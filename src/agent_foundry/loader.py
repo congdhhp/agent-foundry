@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-import yaml
+import yaml  # type: ignore[import-untyped]
 
 
 def load_document(path: str | Path) -> dict[str, Any]:

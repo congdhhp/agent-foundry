@@ -10,16 +10,16 @@ This checklist defines the minimum gates for moving Agent Foundry components fro
 ## Runtime
 
 - [ ] Stateful workflow execution
-- [ ] Checkpoint/resume
+- [x] Checkpoint/resume
 - [ ] Retry and fallback policy
-- [ ] Human approval node
-- [ ] Tool call audit
+- [x] Human approval node
+- [x] Tool call audit
 - [ ] Output verification
 - [ ] Evidence manager
 - [ ] Safe interruption and recovery
 - [ ] Idempotency handling for side effects
 - [ ] Task cancellation
-- [ ] Trace ID propagation
+- [x] Trace ID propagation
 
 ## Skills
 
@@ -36,14 +36,14 @@ This checklist defines the minimum gates for moving Agent Foundry components fro
 
 ## Artifact Management
 
-- [ ] Unified artifact registry
-- [ ] Skill lifecycle commands
-- [ ] Policy lifecycle commands
-- [ ] Workflow lifecycle commands
+- [x] Unified artifact registry
+- [x] Skill lifecycle commands
+- [x] Policy lifecycle commands
+- [x] Workflow lifecycle commands
 - [ ] Artifact publish gates
 - [ ] Artifact deprecation workflow
 - [ ] Artifact version bump workflow
-- [ ] Artifact impact analysis
+- [x] Artifact impact analysis
 - [ ] Artifact dependency graph
 - [ ] Immutable published artifact versions
 - [ ] Migration guidance for deprecated artifacts
@@ -57,7 +57,7 @@ This checklist defines the minimum gates for moving Agent Foundry components fro
 - [ ] Tool authentication
 - [ ] Tool authorization
 - [ ] Tool policy enforcement
-- [ ] Output sanitization
+- [x] Output sanitization
 - [ ] Rate limiting
 - [ ] Tool metrics
 - [ ] Provider compatibility tests
@@ -96,13 +96,13 @@ This checklist defines the minimum gates for moving Agent Foundry components fro
 
 ## Model Plane
 
-- [ ] Model policy registry
-- [ ] Provider allowlist
-- [ ] Model allowlist
-- [ ] Prompt redaction
-- [ ] Prompt size limits
-- [ ] Model call audit events
-- [ ] Retry and fallback policy
+- [x] Model policy registry
+- [x] Provider allowlist
+- [x] Model allowlist
+- [x] Prompt redaction
+- [x] Prompt size limits
+- [x] Model call audit events
+- [x] Retry and fallback policy
 - [ ] Cost accounting
 - [ ] Streaming behavior
 - [ ] Structured output validation

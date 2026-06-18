@@ -16,7 +16,11 @@ spec:
   allowedModels:
     - deterministic-local
     - gpt-4.1-mini
+  fallbackModels:
+    - deterministic-local
   maxPromptChars: 12000
+  maxOutputTokens: 2048
   temperature: 0.2
   timeoutSeconds: 30
+  retryCount: 1
   redactSecrets: true

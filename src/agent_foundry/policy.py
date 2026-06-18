@@ -20,6 +20,8 @@ class PolicyResult:
     decision: PolicyDecision
     matched_rules: list[PolicyRule] = field(default_factory=list)
     reason: str = ""
+    transforms: list[str] = field(default_factory=list)
+    approvers: list[str] = field(default_factory=list)
 
     @property
     def allowed(self) -> bool:
@@ -28,6 +30,14 @@ class PolicyResult:
     @property
     def approval_required(self) -> bool:
         return self.decision == PolicyDecision.REQUIRE_APPROVAL
+
+    @property
+    def step_up_required(self) -> bool:
+        return self.decision == PolicyDecision.REQUIRE_STEP_UP_AUTH
+
+    @property
+    def transform_required(self) -> bool:
+        return self.decision == PolicyDecision.REQUIRE_TRANSFORM
 
 
 class PolicyEngine:
@@ -57,10 +67,14 @@ class PolicyEngine:
             )
 
         decision = max(matched, key=lambda rule: DECISION_PRIORITY[rule.decision]).decision
+        transforms = self._unique(item for rule in matched for item in rule.transforms)
+        approvers = self._unique(item for rule in matched for item in rule.approvers)
         return PolicyResult(
             decision=decision,
             matched_rules=matched,
             reason=f"Matched {len(matched)} policy rule(s).",
+            transforms=transforms,
+            approvers=approvers,
         )
 
     def _matches(self, rule: PolicyRule, context: dict[str, Any]) -> bool:
@@ -70,3 +84,9 @@ class PolicyEngine:
                 return False
         return True
 
+    def _unique(self, values: Any) -> list[Any]:
+        unique_values: list[Any] = []
+        for value in values:
+            if value not in unique_values:
+                unique_values.append(value)
+        return unique_values

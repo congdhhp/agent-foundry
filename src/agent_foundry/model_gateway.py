@@ -28,6 +28,9 @@ class ModelRequest:
     temperature: float
     timeout_seconds: int
     dry_run: bool
+    max_output_tokens: int | None = None
+    retry_count: int = 0
+    fallback_models: list[str] | None = None
 
 
 @dataclass(frozen=True)
@@ -97,6 +100,8 @@ class OpenAIChatModelProvider:
             ],
             "temperature": request.temperature,
         }
+        if request.max_output_tokens is not None:
+            payload["max_tokens"] = request.max_output_tokens
         body = json.dumps(payload).encode("utf-8")
         http_request = urllib.request.Request(
             "https://api.openai.com/v1/chat/completions",
@@ -138,7 +143,7 @@ class ModelGateway:
         self.provider_override = provider_override
         self.model_override = model_override
         self.allow_model_calls = allow_model_calls
-        self.providers = {
+        self.providers: dict[str, Any] = {
             "deterministic": DeterministicModelProvider(),
             "openai": OpenAIChatModelProvider(),
         }
@@ -170,13 +175,28 @@ class ModelGateway:
             temperature=model_policy.spec.temperature,
             timeout_seconds=model_policy.spec.timeout_seconds,
             dry_run=not self.allow_model_calls,
+            max_output_tokens=model_policy.spec.max_output_tokens,
+            retry_count=model_policy.spec.retry_count,
+            fallback_models=model_policy.spec.fallback_models,
         )
 
     def generate(self, request: ModelRequest) -> ModelResponse:
         provider = self.providers.get(request.provider)
         if provider is None:
             raise ValueError(f"Unsupported model provider: {request.provider}")
-        return provider.generate(request)
+        attempts = max(1, request.retry_count + 1)
+        models = [request.model, *(request.fallback_models or [])]
+        last_error: Exception | None = None
+        for model in models:
+            model_request = request if model == request.model else ModelRequest(
+                **{**request.__dict__, "model": model}
+            )
+            for _ in range(attempts):
+                try:
+                    return provider.generate(model_request)
+                except Exception as exc:  # noqa: BLE001 - retry provider failures
+                    last_error = exc
+        raise ValueError(f"Model provider failed after {attempts} attempt(s): {last_error}")
 
     def compose_prompt(
         self,
@@ -233,3 +253,9 @@ class ModelGateway:
             raise ValueError(
                 f"Model {model} is not allowed by {model_policy.metadata.id}"
             )
+        for fallback_model in model_policy.spec.fallback_models:
+            if allowed_models and fallback_model not in allowed_models:
+                raise ValueError(
+                    f"Fallback model {fallback_model} is not allowed by "
+                    f"{model_policy.metadata.id}"
+                )

@@ -9,6 +9,11 @@ The runtime executes tasks for resolved agent profiles. It must be generic, stat
 
 The runtime does not know domain-specific business logic such as incident triage, support refund analysis or coding bugfix behavior. It executes workflows and capabilities selected by resolved agent configuration.
 
+The local runtime supports both linear node order and explicit workflow edges.
+If a workflow omits `edges`, nodes execute in manifest order for backward
+compatibility. If `edges` are present, the runtime derives execution order from
+the graph and checkpoints the current node index so paused tasks can resume.
+
 ## Runtime Responsibilities
 
 1. Load resolved agent profile.
@@ -240,4 +245,3 @@ MVP runtime should include:
 6. Evidence creation from tool outputs.
 7. Audit event emission.
 8. Final response verification against minimal schema.
-

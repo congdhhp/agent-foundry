@@ -1,5 +1,29 @@
 {
   "$defs": {
+    "WorkflowEdge": {
+      "additionalProperties": false,
+      "properties": {
+        "condition": {
+          "default": "success",
+          "title": "Condition",
+          "type": "string"
+        },
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "target": {
+          "title": "Target",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source",
+        "target"
+      ],
+      "title": "WorkflowEdge",
+      "type": "object"
+    },
     "WorkflowNode": {
       "additionalProperties": false,
       "properties": {
@@ -52,6 +76,13 @@
   },
   "additionalProperties": false,
   "properties": {
+    "edges": {
+      "items": {
+        "$ref": "#/$defs/WorkflowEdge"
+      },
+      "title": "Edges",
+      "type": "array"
+    },
     "id": {
       "title": "Id",
       "type": "string"

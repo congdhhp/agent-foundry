@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import shutil
 import sys
 from pathlib import Path
 
@@ -10,7 +11,8 @@ from .agent_factory import AgentCreateRequest, AgentFactory
 from .agent_validation import AgentDeepValidator
 from .artifact_management import ArtifactManager, MANAGED_KINDS
 from .evals import EvalRunner
-from .loader import dump_json, load_document
+from .loader import dump_json, dump_yaml, load_document
+from .models import AgentManifest
 from .runtime import AgentRuntime, RuntimeOptions
 from .schemas import export_schemas, schema_names
 from .skills import SkillRegistry
@@ -55,6 +57,44 @@ def _schemas(args: argparse.Namespace) -> int:
     raise ValueError(f"Unknown schemas command: {args.schemas_command}")
 
 
+def _init(args: argparse.Namespace) -> int:
+    registry_root = Path(args.registry_root)
+    store_root = Path(args.store)
+    local_registry = store_root / "registry"
+    for name in [
+        "agents",
+        "skills",
+        "policies",
+        "workflows",
+        "capabilities",
+        "tools",
+        "evals",
+        "eval-suites",
+        "model-policies",
+    ]:
+        (local_registry / name).mkdir(parents=True, exist_ok=True)
+    (store_root / "sessions").mkdir(parents=True, exist_ok=True)
+    (store_root / "artifact-index").mkdir(parents=True, exist_ok=True)
+    if args.seed:
+        source = registry_root / "examples"
+        seed_items = source.iterdir() if source.exists() else []
+        for child in seed_items:
+            if child.is_dir():
+                shutil.copytree(
+                    child,
+                    local_registry / child.name,
+                    dirs_exist_ok=True,
+                )
+    config = {
+        "registry_root": str(registry_root),
+        "store_root": str(store_root),
+        "local_registry": str(local_registry),
+    }
+    (store_root / "config.yaml").write_text(dump_yaml(config), encoding="utf-8")
+    print(dump_json({"initialized": True, **config}))
+    return 0
+
+
 def _run(args: argparse.Namespace) -> int:
     runtime = AgentRuntime(
         RuntimeOptions(
@@ -69,7 +109,32 @@ def _run(args: argparse.Namespace) -> int:
     )
     response = runtime.run(args.agent, args.task)
     print(dump_json(response))
-    return 0 if response["status"] in {"completed", "waiting_approval"} else 1
+    return 0 if response["status"] in {
+        "completed",
+        "waiting_approval",
+        "waiting_step_up_auth",
+    } else 1
+
+
+def _resume(args: argparse.Namespace) -> int:
+    runtime = AgentRuntime(
+        RuntimeOptions(
+            registry_root=Path(args.registry_root),
+            store_root=Path(args.store),
+            workspace=Path(args.workspace),
+            dry_run=not args.allow_writes,
+            model_provider=args.model_provider,
+            model=args.model,
+            allow_model_calls=args.allow_model_calls,
+        )
+    )
+    response = runtime.resume(args.task_id)
+    print(dump_json(response))
+    return 0 if response["status"] in {
+        "completed",
+        "waiting_approval",
+        "waiting_step_up_auth",
+    } else 1
 
 
 def _sessions(args: argparse.Namespace) -> int:
@@ -85,13 +150,46 @@ def _show(args: argparse.Namespace) -> int:
         "trace": "trace.jsonl",
         "evidence": "evidence.jsonl",
         "approvals": "approvals.jsonl",
+        "metrics": "metrics.jsonl",
     }
     print(dump_json(store.read_jsonl(args.task_id, mapping[args.kind])))
     return 0
 
 
+def _approvals(args: argparse.Namespace) -> int:
+    store = LocalSessionStore(args.store)
+    if args.approvals_command == "list":
+        print(dump_json(store.read_jsonl(args.task_id, "approvals.jsonl")))
+        return 0
+    if args.approvals_command == "approve":
+        print(
+            dump_json(
+                store.set_approval_status(
+                    args.task_id,
+                    args.approval_id,
+                    "approved",
+                    args.user,
+                )
+            )
+        )
+        return 0
+    if args.approvals_command == "deny":
+        print(
+            dump_json(
+                store.set_approval_status(
+                    args.task_id,
+                    args.approval_id,
+                    "denied",
+                    args.user,
+                )
+            )
+        )
+        return 0
+    raise ValueError(f"Unknown approvals command: {args.approvals_command}")
+
+
 def _skills(args: argparse.Namespace) -> int:
-    registry = SkillRegistry(args.registry_root)
+    registry = SkillRegistry(args.registry_root, args.store)
     if args.skills_command == "list":
         rows = [
             {
@@ -180,9 +278,9 @@ def _skill(args: argparse.Namespace) -> int:
         print(dump_json(result.to_dict()))
         return 0 if result.valid else 1
     if args.skill_command == "publish":
-        result = manager.publish("skill", args.skill, args.eval_suite, args.agent)
-        print(dump_json(result))
-        return 0 if result["published"] else 1
+        publish_result = manager.publish("skill", args.skill, args.eval_suite, args.agent)
+        print(dump_json(publish_result))
+        return 0 if publish_result["published"] else 1
     if args.skill_command == "deprecate":
         print(
             dump_json(
@@ -241,9 +339,9 @@ def _policy(args: argparse.Namespace) -> int:
         print(dump_json(manager.simulate_policy(args.policy, args.capability, args.agent)))
         return 0
     if args.policy_command == "publish":
-        result = manager.publish("policy", args.policy)
-        print(dump_json(result))
-        return 0 if result["published"] else 1
+        publish_result = manager.publish("policy", args.policy)
+        print(dump_json(publish_result))
+        return 0 if publish_result["published"] else 1
     if args.policy_command == "deprecate":
         print(
             dump_json(
@@ -298,9 +396,9 @@ def _workflow(args: argparse.Namespace) -> int:
         print(dump_json(result.to_dict()))
         return 0 if result.valid else 1
     if args.workflow_command == "publish":
-        result = manager.publish("workflow", args.workflow, args.eval_suite, args.agent)
-        print(dump_json(result))
-        return 0 if result["published"] else 1
+        publish_result = manager.publish("workflow", args.workflow, args.eval_suite, args.agent)
+        print(dump_json(publish_result))
+        return 0 if publish_result["published"] else 1
     if args.workflow_command == "deprecate":
         print(
             dump_json(
@@ -366,32 +464,32 @@ def _agent(args: argparse.Namespace) -> int:
             target = factory.resolve_agent_path(args.agent)
         except FileNotFoundError:
             target = args.agent
-        result = AgentDeepValidator(args.registry_root).validate(target)
+        validation_result = AgentDeepValidator(args.registry_root, args.store).validate(target)
         print(
             dump_json(
                 {
-                    "valid": result.valid,
-                    "errors": result.errors,
-                    "warnings": result.warnings,
+                    "valid": validation_result.valid,
+                    "errors": validation_result.errors,
+                    "warnings": validation_result.warnings,
                 }
             )
         )
-        return 0 if result.valid else 1
+        return 0 if validation_result.valid else 1
     if args.agent_command == "publish":
-        result = factory.publish(args.agent, args.eval, args.eval_suite)
+        publish_result = factory.publish(args.agent, args.eval, args.eval_suite)
         print(
             dump_json(
                 {
-                    "published": result.published,
-                    "path": str(result.path),
-                    "errors": result.errors,
-                    "warnings": result.warnings,
-                    "eval_reports": result.eval_reports,
-                    "eval_suite_reports": result.eval_suite_reports,
+                    "published": publish_result.published,
+                    "path": str(publish_result.path),
+                    "errors": publish_result.errors,
+                    "warnings": publish_result.warnings,
+                    "eval_reports": publish_result.eval_reports,
+                    "eval_suite_reports": publish_result.eval_suite_reports,
                 }
             )
         )
-        return 0 if result.published else 1
+        return 0 if publish_result.published else 1
     raise ValueError(f"Unknown agent command: {args.agent_command}")
 
 
@@ -408,13 +506,13 @@ def _parse_labels(values: list[str]) -> dict[str, str]:
 def _eval(args: argparse.Namespace) -> int:
     runner = EvalRunner(args.registry_root, args.store)
     if args.eval_command == "run":
-        report = runner.run(args.eval_case, args.agent)
-        print(dump_json(report.to_dict()))
-        return 0 if report.passed else 1
+        case_report = runner.run(args.eval_case, args.agent)
+        print(dump_json(case_report.to_dict()))
+        return 0 if case_report.passed else 1
     if args.eval_command == "run-suite":
-        report = runner.run_suite(args.eval_suite, args.agent)
-        print(dump_json(report.to_dict()))
-        return 0 if report.passed else 1
+        suite_report = runner.run_suite(args.eval_suite, args.agent)
+        print(dump_json(suite_report.to_dict()))
+        return 0 if suite_report.passed else 1
     if args.eval_command == "reports":
         print(dump_json(runner.list_reports()))
         return 0
@@ -425,7 +523,7 @@ def _eval(args: argparse.Namespace) -> int:
 
 
 def _tools(args: argparse.Namespace) -> int:
-    providers = ToolProviderRegistry(args.registry_root)
+    providers = ToolProviderRegistry(args.registry_root, args.store)
     if args.tools_command == "list":
         print(
             dump_json(
@@ -444,7 +542,7 @@ def _tools(args: argparse.Namespace) -> int:
                             for capability in provider.spec.capabilities
                         ],
                     }
-                    for provider in providers.list()
+                    for provider in providers.list_providers()
                 ]
             )
         )
@@ -468,6 +566,8 @@ def _tools(args: argparse.Namespace) -> int:
     if args.tools_command == "bindings":
         document = load_document(args.agent)
         agent = validate_document(document, "agent")
+        if not isinstance(agent, AgentManifest):
+            raise ValueError(f"{args.agent} is not an agent manifest")
         bindings = providers.bindings_for_agent(agent)
         print(
             dump_json(
@@ -510,6 +610,16 @@ def build_parser() -> argparse.ArgumentParser:
     export_parser.add_argument("--output", default="schemas")
     schemas_parser.set_defaults(func=_schemas)
 
+    init_parser = subparsers.add_parser("init", help="Initialize local Agent Foundry state")
+    init_parser.add_argument("--registry-root", default=".")
+    init_parser.add_argument("--store", default=".agent")
+    init_parser.add_argument(
+        "--seed",
+        action="store_true",
+        help="Copy bundled example artifacts into the local registry",
+    )
+    init_parser.set_defaults(func=_init)
+
     run_parser = subparsers.add_parser("run", help="Run an agent task locally")
     run_parser.add_argument("agent", help="Agent manifest path or agent reference")
     run_parser.add_argument("task", help="Task input")
@@ -530,6 +640,25 @@ def build_parser() -> argparse.ArgumentParser:
     )
     run_parser.set_defaults(func=_run)
 
+    resume_parser = subparsers.add_parser("resume", help="Resume a paused task")
+    resume_parser.add_argument("task_id")
+    resume_parser.add_argument("--registry-root", default=".")
+    resume_parser.add_argument("--store", default=".agent")
+    resume_parser.add_argument("--workspace", default=".")
+    resume_parser.add_argument(
+        "--allow-writes",
+        action="store_true",
+        help="Allow non-dry-run tool adapters where supported",
+    )
+    resume_parser.add_argument("--model-provider")
+    resume_parser.add_argument("--model")
+    resume_parser.add_argument(
+        "--allow-model-calls",
+        action="store_true",
+        help="Allow configured model provider network calls.",
+    )
+    resume_parser.set_defaults(func=_resume)
+
     sessions_parser = subparsers.add_parser("sessions", help="List local task sessions")
     sessions_parser.add_argument("--store", default=".agent")
     sessions_parser.set_defaults(func=_sessions)
@@ -537,13 +666,41 @@ def build_parser() -> argparse.ArgumentParser:
     show_parser = subparsers.add_parser("show", help="Show task session JSONL data")
     show_parser.add_argument("task_id")
     show_parser.add_argument(
-        "kind", choices=["events", "trace", "evidence", "approvals"]
+        "kind", choices=["events", "trace", "evidence", "approvals", "metrics"]
     )
     show_parser.add_argument("--store", default=".agent")
     show_parser.set_defaults(func=_show)
 
+    approvals_parser = subparsers.add_parser(
+        "approvals",
+        help="Inspect and decide pending approvals",
+    )
+    approvals_parser.add_argument("--store", default=".agent")
+    approvals_subparsers = approvals_parser.add_subparsers(
+        dest="approvals_command",
+        required=True,
+    )
+    approvals_list = approvals_subparsers.add_parser("list", help="List task approvals")
+    approvals_list.add_argument("task_id")
+    approvals_approve = approvals_subparsers.add_parser(
+        "approve",
+        help="Approve a pending action",
+    )
+    approvals_approve.add_argument("task_id")
+    approvals_approve.add_argument("approval_id")
+    approvals_approve.add_argument("--user", default="local-user")
+    approvals_deny = approvals_subparsers.add_parser(
+        "deny",
+        help="Deny a pending action",
+    )
+    approvals_deny.add_argument("task_id")
+    approvals_deny.add_argument("approval_id")
+    approvals_deny.add_argument("--user", default="local-user")
+    approvals_parser.set_defaults(func=_approvals)
+
     skills_parser = subparsers.add_parser("skills", help="Manage local skill packages")
     skills_parser.add_argument("--registry-root", default=".")
+    skills_parser.add_argument("--store", default=".agent")
     skills_subparsers = skills_parser.add_subparsers(dest="skills_command", required=True)
     skills_subparsers.add_parser("list", help="List local skills")
     skills_inspect = skills_subparsers.add_parser("inspect", help="Inspect a skill package")
@@ -740,6 +897,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     tools_parser = subparsers.add_parser("tools", help="Inspect tool providers")
     tools_parser.add_argument("--registry-root", default=".")
+    tools_parser.add_argument("--store", default=".agent")
     tools_subparsers = tools_parser.add_subparsers(dest="tools_command", required=True)
     tools_subparsers.add_parser("list", help="List tool providers")
     tools_subparsers.add_parser("validate", help="Validate tool providers")

@@ -305,9 +305,12 @@ class ModelPolicySpec(StrictModel):
     default_model: str = Field(alias="defaultModel")
     allowed_providers: list[str] = Field(default_factory=list, alias="allowedProviders")
     allowed_models: list[str] = Field(default_factory=list, alias="allowedModels")
+    fallback_models: list[str] = Field(default_factory=list, alias="fallbackModels")
     max_prompt_chars: int = Field(default=12000, alias="maxPromptChars", ge=1)
+    max_output_tokens: int | None = Field(default=None, alias="maxOutputTokens", ge=1)
     temperature: float = Field(default=0.2, ge=0, le=2)
     timeout_seconds: int = Field(default=30, alias="timeoutSeconds", ge=1)
+    retry_count: int = Field(default=0, alias="retryCount", ge=0, le=5)
     redact_secrets: bool = Field(default=True, alias="redactSecrets")
 
 
@@ -332,12 +335,19 @@ class WorkflowNode(StrictModel):
         return _validate_capability_ref(value, "capability")
 
 
+class WorkflowEdge(StrictModel):
+    source: str
+    target: str
+    condition: str = "success"
+
+
 class WorkflowDefinition(StrictModel):
     id: str
     version: str
     runtime: str
     state_schema: str
     nodes: list[WorkflowNode]
+    edges: list[WorkflowEdge] = Field(default_factory=list)
 
     @field_validator("version")
     @classmethod

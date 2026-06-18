@@ -95,34 +95,46 @@ agent-foundry policy publish workspace-write@1.0.0
 
 agent-foundry workflow inspect coding_task_graph@1.0.0
 agent-foundry workflow impact coding_task_graph@1.0.0
+agent-foundry approvals list <task_id>
+agent-foundry approvals approve <task_id> <approval_id>
+agent-foundry resume <task_id>
 ```
 
-Current MVP note: Phase 6 provides local `skill`, `policy` and `workflow` lifecycle commands plus a generated `.agent/artifact-index`. The older `skills list`, `skills inspect` and `skills validate` commands remain available for backward compatibility.
+Current MVP note: local `skill`, `policy` and `workflow` lifecycle commands write user-authored artifacts to `.agent/registry`. The older `skills list`, `skills inspect` and `skills validate` commands remain available for backward compatibility.
 
 ## Local Storage Layout
 
 ```text
 .agent/
   config.yaml
+  registry/
+    agents/
+    skills/
+    policies/
+    workflows/
+    capabilities/
+    tools/
+    model-policies/
+    evals/
+    eval-suites/
   agents/
     monitoring-agent.yaml
     coding-agent.yaml
-  skills/
-    incident-triage/
-    bugfix/
-  capabilities/
-    metrics.query.yaml
-    logs.search.yaml
   sessions/
     task_123/
       events.jsonl
-      state.sqlite
       trace.jsonl
+      metrics.jsonl
+      evidence.jsonl
+      approvals.jsonl
+      checkpoints.sqlite
       artifacts/
   artifact-index/
-  policies/
-  tools/
 ```
+
+`examples/` is the bundled seed registry. User-created artifacts are written to
+`.agent/registry` by default so installed or packaged CLIs do not need to modify
+the application directory.
 
 ## REST API
 

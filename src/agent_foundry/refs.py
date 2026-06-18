@@ -9,7 +9,7 @@ class ArtifactRef:
     version: str
 
     @classmethod
-    def parse(cls, value: str) -> "ArtifactRef":
+    def parse(cls, value: str) -> ArtifactRef:
         if "@" not in value:
             raise ValueError(f"Artifact reference must include '@': {value}")
         artifact_id, version = value.rsplit("@", 1)
@@ -26,4 +26,3 @@ class ArtifactRef:
 
     def __str__(self) -> str:
         return f"{self.id}@{self.version}"
-

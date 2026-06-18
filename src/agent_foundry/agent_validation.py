@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .models import AgentManifest, PolicyDecision
+from .models import PolicyDecision
 from .policy import PolicyEngine
 from .registry import LocalRegistry
 
@@ -16,8 +16,12 @@ class AgentValidationResult:
 
 
 class AgentDeepValidator:
-    def __init__(self, root: str | Path = ".") -> None:
-        self.registry = LocalRegistry(root)
+    def __init__(
+        self,
+        root: str | Path = ".",
+        store_root: str | Path | None = None,
+    ) -> None:
+        self.registry = LocalRegistry(root, store_root)
         self.policy_engine = PolicyEngine()
 
     def validate(self, agent_path_or_ref: str | Path) -> AgentValidationResult:

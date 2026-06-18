@@ -94,6 +94,16 @@ Install locally:
 python -m pip install -e .[dev]
 ```
 
+Initialize local project state:
+
+```bash
+agent-foundry init
+```
+
+This creates `.agent/registry` for user-authored artifacts and `.agent/sessions`
+for runtime state. The bundled `examples/` directory remains a seed registry and
+reference catalog.
+
 Validate example artifacts:
 
 ```bash
@@ -123,6 +133,7 @@ Inspect local sessions and task data:
 agent-foundry sessions
 agent-foundry show <task_id> events
 agent-foundry show <task_id> evidence
+agent-foundry show <task_id> metrics
 ```
 
 Use Phase 2 composition commands:
@@ -164,6 +175,14 @@ agent-foundry agent create my-research-agent \
 agent-foundry agent inspect my-research-agent
 agent-foundry agent publish my-research-agent --eval-suite examples/eval-suites/research-agent-evals.yaml
 agent-foundry run .agent/agents/my-research-agent.yaml "Research capability contracts"
+```
+
+Approve and resume a paused task:
+
+```bash
+agent-foundry approvals list <task_id>
+agent-foundry approvals approve <task_id> <approval_id>
+agent-foundry resume <task_id>
 ```
 
 Inspect an artifact:

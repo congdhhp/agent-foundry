@@ -21,6 +21,7 @@ Phase 7 provides:
 6. Runtime integration for `llm_reasoning`, `evaluator` and `output_composer` workflow nodes.
 7. Model events in task audit logs.
 8. CLI model options for `agent-foundry run`.
+9. Retry count, fallback model list and output token budget controls.
 
 ## Model Policy Artifact
 
@@ -39,9 +40,13 @@ spec:
   allowedModels:
     - deterministic-local
     - gpt-4.1-mini
+  fallbackModels:
+    - deterministic-local
   maxPromptChars: 12000
+  maxOutputTokens: 2048
   temperature: 0.2
   timeoutSeconds: 30
+  retryCount: 1
   redactSecrets: true
 ```
 
@@ -120,7 +125,7 @@ model.failed
 1. Native Responses API provider.
 2. Streaming support.
 3. Cost calculation by model.
-4. Retry, fallback and circuit breaker policy.
+4. Circuit breaker policy.
 5. Prompt template registry.
 6. Structured output validation against skill output schemas.
 7. Tenant-aware model routing and data residency constraints.

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import re
 import subprocess
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from time import perf_counter
 from typing import Any
@@ -32,11 +32,23 @@ class ToolExecutor:
 
     def execute(
         self,
+        provider: ToolProviderManifest,
         capability_ref: str,
         provider_tool: str,
         task_input: str,
         prior_outputs: list[dict[str, Any]],
     ) -> ToolExecutionResult:
+        if provider.spec.protocol != "in_process":
+            if self.dry_run:
+                return self._dry_run_external_provider(
+                    provider,
+                    capability_ref,
+                    provider_tool,
+                )
+            raise ValueError(
+                f"Provider protocol is not supported by local executor: "
+                f"{provider.metadata.id}/{provider.spec.protocol}"
+            )
         capability_id = capability_ref.split("@", 1)[0]
         handlers = {
             "web.search": self._web_search,
@@ -60,6 +72,33 @@ class ToolExecutor:
             tool_name=provider_tool.split(".", 1)[1] if "." in provider_tool else provider_tool,
             output=output,
             summary=summary,
+            duration_ms=0,
+            success=True,
+            sanitized=False,
+        )
+
+    def _dry_run_external_provider(
+        self,
+        provider: ToolProviderManifest,
+        capability_ref: str,
+        provider_tool: str,
+    ) -> ToolExecutionResult:
+        return ToolExecutionResult(
+            capability=capability_ref,
+            provider_tool=provider_tool,
+            provider_id=provider.metadata.id,
+            tool_name=provider_tool.split(".", 1)[1] if "." in provider_tool else provider_tool,
+            output={
+                "metadata": {
+                    "dry_run": True,
+                    "protocol": provider.spec.protocol,
+                    "endpoint": provider.spec.endpoint,
+                }
+            },
+            summary=(
+                f"Prepared external provider call for {provider.metadata.id} "
+                f"using protocol {provider.spec.protocol}."
+            ),
             duration_ms=0,
             success=True,
             sanitized=False,
@@ -143,13 +182,13 @@ class ToolExecutor:
     ) -> tuple[dict[str, Any], str]:
         command = ["python", "-m", "pytest"]
         if self.dry_run:
-            result = {
+            dry_run_result: dict[str, Any] = {
                 "exit_code": None,
                 "stdout": "",
                 "stderr": "",
                 "metadata": {"dry_run": True, "command": " ".join(command)},
             }
-            return result, "Prepared shell.run in dry-run mode."
+            return dry_run_result, "Prepared shell.run in dry-run mode."
         completed = subprocess.run(
             command,
             cwd=self.workspace,
@@ -158,12 +197,12 @@ class ToolExecutor:
             text=True,
             timeout=120,
         )
-        result = {
+        completed_result: dict[str, Any] = {
             "exit_code": completed.returncode,
             "stdout": completed.stdout,
             "stderr": completed.stderr,
         }
-        return result, f"Executed shell command with exit code {completed.returncode}."
+        return completed_result, f"Executed shell command with exit code {completed.returncode}."
 
     def _git_diff(
         self, task_input: str, prior_outputs: list[dict[str, Any]]
@@ -258,6 +297,7 @@ class ToolCall:
     provider_tool: str
     task_input: str
     prior_outputs: list[dict[str, Any]]
+    transforms: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -282,24 +322,41 @@ class OutputSanitizer:
         self,
         output: dict[str, Any],
         policy: ToolProviderOutputSanitization,
+        transforms: list[str] | None = None,
     ) -> tuple[dict[str, Any], bool]:
-        sanitized_output = self._redact(output) if policy.redact_secrets else dict(output)
+        requested_transforms = transforms or []
+        redact = policy.redact_secrets or "redact_secrets" in requested_transforms
+        sanitized_output = self._redact(output) if redact else dict(output)
+        if "drop_raw" in requested_transforms:
+            sanitized_output.pop("raw", None)
         serialized = json.dumps(sanitized_output, sort_keys=True, default=str)
         changed = serialized != json.dumps(output, sort_keys=True, default=str)
-        if len(serialized.encode("utf-8")) > policy.max_payload_bytes:
+        max_payload_bytes = policy.max_payload_bytes
+        for transform in requested_transforms:
+            if transform == "truncate_output":
+                max_payload_bytes = min(max_payload_bytes, 10000)
+            elif transform.startswith("truncate_bytes:"):
+                max_payload_bytes = min(
+                    max_payload_bytes,
+                    int(transform.split(":", 1)[1]),
+                )
+        if len(serialized.encode("utf-8")) > max_payload_bytes:
             sanitized_output = {
                 "truncated": True,
                 "metadata": {
                     "originalBytes": len(serialized.encode("utf-8")),
-                    "maxPayloadBytes": policy.max_payload_bytes,
+                    "maxPayloadBytes": max_payload_bytes,
                 },
             }
             changed = True
         metadata = sanitized_output.setdefault("metadata", {})
         metadata["sanitized"] = True
-        if policy.tag_untrusted:
+        changed = True
+        if requested_transforms:
+            metadata["policyTransforms"] = requested_transforms
+        if policy.tag_untrusted or "tag_untrusted" in requested_transforms:
             metadata["trusted"] = False
-        return sanitized_output, True or changed
+        return sanitized_output, changed
 
     def _redact(self, value: Any) -> Any:
         if isinstance(value, dict):
@@ -341,6 +398,7 @@ class ToolGateway:
         started = perf_counter()
         try:
             raw = self.executor.execute(
+                binding.provider,
                 call.capability_ref,
                 call.provider_tool,
                 call.task_input,
@@ -349,6 +407,7 @@ class ToolGateway:
             output, sanitized = self.sanitizer.sanitize(
                 raw.output,
                 binding.provider.spec.output_sanitization,
+                call.transforms,
             )
             success = True
             summary = raw.summary

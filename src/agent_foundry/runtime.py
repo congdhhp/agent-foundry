@@ -3,11 +3,20 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 from .agent_validation import AgentDeepValidator
 from .evidence import EvidenceManager
 from .model_gateway import ModelGateway
-from .models import AgentManifest, PolicyDecision, WorkflowNodeType
+from .models import (
+    AgentManifest,
+    ModelPolicyManifest,
+    PolicyDecision,
+    PolicyManifest,
+    WorkflowDefinition,
+    WorkflowNode,
+    WorkflowNodeType,
+)
 from .policy import PolicyEngine
 from .registry import LocalRegistry
 from .skills import SkillRegistry, SkillSelector
@@ -24,20 +33,30 @@ class RuntimeOptions:
     model_provider: str | None = None
     model: str | None = None
     allow_model_calls: bool = False
+    registry_store_root: Path | None = None
 
 
 class AgentRuntime:
     def __init__(self, options: RuntimeOptions | None = None) -> None:
         self.options = options or RuntimeOptions()
-        self.registry = LocalRegistry(self.options.registry_root)
-        self.skill_registry = SkillRegistry(self.options.registry_root)
+        registry_store_root = self.options.registry_store_root or self.options.store_root
+        self.registry = LocalRegistry(self.options.registry_root, registry_store_root)
+        self.skill_registry = SkillRegistry(
+            self.options.registry_root,
+            registry_store_root,
+        )
         self.skill_selector = SkillSelector()
-        self.agent_validator = AgentDeepValidator(self.options.registry_root)
+        self.agent_validator = AgentDeepValidator(
+            self.options.registry_root,
+            registry_store_root,
+        )
         self.store = LocalSessionStore(self.options.store_root)
         self.policy_engine = PolicyEngine()
         self.evidence_manager = EvidenceManager()
         self.tool_gateway = ToolGateway(
-            self.registry, self.options.workspace, self.options.dry_run
+            self.registry,
+            self.options.workspace,
+            self.options.dry_run,
         )
         self.model_gateway = ModelGateway(
             provider_override=self.options.model_provider,
@@ -51,13 +70,10 @@ class AgentRuntime:
         validation = self.agent_validator.validate(agent_path_or_ref)
         if not validation.valid:
             raise ValueError(f"Agent validation failed: {validation.errors}")
+
         workflow = self.registry.load_workflow(agent.spec.workflow)
         policy = self.registry.load_policy(agent.spec.policy)
-        model_policy = (
-            self.registry.load_model_policy(agent.spec.model_policy)
-            if agent.spec.model_policy is not None
-            else self.registry.load_model_policy("default-model-policy@1.0.0")
-        )
+        model_policy = self._load_model_policy(agent)
         skill_packages = [
             self.skill_registry.load_package(skill_ref) for skill_ref in agent.spec.skills
         ]
@@ -69,11 +85,19 @@ class AgentRuntime:
 
         state: dict[str, Any] = {
             "task_id": task_id,
+            "trace_id": f"trace_{uuid4().hex[:16]}",
             "agent_id": agent.metadata.id,
+            "agent_ref": str(agent_path_or_ref),
             "workflow_id": f"{workflow.id}@{workflow.version}",
-            "model_policy_id": f"{model_policy.metadata.id}@{model_policy.metadata.version}",
+            "model_policy_id": (
+                f"{model_policy.metadata.id}@{model_policy.metadata.version}"
+            ),
             "input": task_input,
             "status": "running",
+            "current_node_index": 0,
+            "approved_actions": [],
+            "approved_step_up_actions": [],
+            "denied_actions": [],
             "selected_skills": [selection.ref for selection in skill_selections],
             "skill_context": [
                 {
@@ -103,20 +127,26 @@ class AgentRuntime:
         self.store.append_event(
             task_id,
             "task.started",
-            {"agent_id": agent.metadata.id, "input": task_input},
+            {
+                "trace_id": state["trace_id"],
+                "agent_id": agent.metadata.id,
+                "input": task_input,
+            },
         )
         self.store.append_event(
             task_id,
             "skill.selected",
             {
+                "trace_id": state["trace_id"],
                 "skills": state["selected_skills"],
                 "selection": state["skill_selection"],
             },
         )
         self.store.append_event(
             task_id,
-                "runtime.context.composed",
-                {
+            "runtime.context.composed",
+            {
+                "trace_id": state["trace_id"],
                 "model_policy": state["model_policy_id"],
                 "skills": [
                     {
@@ -124,22 +154,113 @@ class AgentRuntime:
                         "required_capabilities": item["required_capabilities"],
                     }
                     for item in state["skill_context"]
-                ]
+                ],
             },
         )
         self._checkpoint(state, "task.started")
+        return self._execute_workflow(agent, workflow, policy, model_policy, state)
 
-        for node in workflow.nodes:
+    def resume(self, task_id: str) -> dict[str, Any]:
+        checkpoint = self.store.latest_checkpoint(task_id)
+        state = checkpoint["state"]
+        if state.get("status") not in {"waiting_approval", "waiting_step_up_auth"}:
+            raise ValueError(f"Task is not waiting for approval: {task_id}")
+
+        approvals = self.store.read_jsonl(task_id, "approvals.jsonl")
+        latest_by_id = {approval["approval_id"]: approval for approval in approvals}
+        state["approvals"] = list(latest_by_id.values())
+        pending = [
+            approval
+            for approval in latest_by_id.values()
+            if approval.get("status") == "pending"
+        ]
+        if pending:
+            raise ValueError(f"Task still has pending approvals: {task_id}")
+
+        denied = [
+            approval
+            for approval in latest_by_id.values()
+            if approval.get("status") == "denied"
+        ]
+        if denied:
+            state["denied_actions"].extend(
+                approval["action"]
+                for approval in denied
+                if approval["action"] not in state["denied_actions"]
+            )
+            return self._finalize(state, "denied")
+
+        for approval in latest_by_id.values():
+            if approval.get("status") != "approved":
+                continue
+            action = approval["action"]
+            target = (
+                "approved_step_up_actions"
+                if approval.get("approval_type") == "step_up_auth"
+                else "approved_actions"
+            )
+            if action not in state[target]:
+                state[target].append(action)
+        state["status"] = "running"
+
+        agent = self.registry.load_agent(state["agent_ref"])
+        workflow = self.registry.load_workflow(agent.spec.workflow)
+        policy = self.registry.load_policy(agent.spec.policy)
+        model_policy = self._load_model_policy(agent)
+        return self._execute_workflow(
+            agent,
+            workflow,
+            policy,
+            model_policy,
+            state,
+            start_index=int(state.get("current_node_index", 0)),
+        )
+
+    def _execute_workflow(
+        self,
+        agent: AgentManifest,
+        workflow: WorkflowDefinition,
+        policy: PolicyManifest,
+        model_policy: ModelPolicyManifest,
+        state: dict[str, Any],
+        start_index: int = 0,
+    ) -> dict[str, Any]:
+        ordered_nodes = self._ordered_nodes(workflow)
+        for index in range(start_index, len(ordered_nodes)):
+            node = ordered_nodes[index]
+            state["current_node_index"] = index
             self.store.append_event(
-                task_id,
+                state["task_id"],
                 "workflow.node.started",
-                {"node_id": node.id, "node_type": node.type.value},
+                {
+                    "trace_id": state["trace_id"],
+                    "node_id": node.id,
+                    "node_type": node.type.value,
+                },
             )
 
             if node.type == WorkflowNodeType.CAPABILITY_CALL:
-                outcome = self._execute_capability_node(agent, policy, state, node.id, node.capability)
+                outcome = self._execute_capability_node(
+                    agent,
+                    policy,
+                    state,
+                    node.id,
+                    node.capability,
+                )
                 self._checkpoint(state, node.id)
-                if outcome in {"waiting_approval", "denied", "failed"}:
+                if outcome in {
+                    "waiting_approval",
+                    "waiting_step_up_auth",
+                    "denied",
+                    "failed",
+                }:
+                    return self._finalize(state, outcome)
+                continue
+
+            if node.type == WorkflowNodeType.HUMAN_APPROVAL:
+                outcome = self._execute_human_approval_node(state, node)
+                self._checkpoint(state, node.id)
+                if outcome == "waiting_approval":
                     return self._finalize(state, outcome)
                 continue
 
@@ -164,7 +285,7 @@ class AgentRuntime:
             observation = {
                 "node_id": node.id,
                 "type": node.type.value,
-                "summary": "Node type acknowledged by Phase 1 runtime.",
+                "summary": "Node type acknowledged by local runtime.",
             }
             state["observations"].append(observation)
             self._checkpoint(state, node.id)
@@ -174,7 +295,7 @@ class AgentRuntime:
     def _execute_capability_node(
         self,
         agent: AgentManifest,
-        policy: Any,
+        policy: PolicyManifest,
         state: dict[str, Any],
         node_id: str,
         capability_ref: str | None,
@@ -199,7 +320,11 @@ class AgentRuntime:
             self.store.append_event(
                 state["task_id"],
                 "policy.denied",
-                {"capability": capability_ref, "reason": "missing binding"},
+                {
+                    "trace_id": state["trace_id"],
+                    "capability": capability_ref,
+                    "reason": "missing binding",
+                },
             )
             return "denied"
 
@@ -209,9 +334,12 @@ class AgentRuntime:
             state["task_id"],
             "policy.evaluated",
             {
+                "trace_id": state["trace_id"],
                 "capability": capability_ref,
                 "decision": policy_result.decision.value,
                 "reason": policy_result.reason,
+                "transforms": policy_result.transforms,
+                "approvers": policy_result.approvers,
             },
         )
 
@@ -226,21 +354,46 @@ class AgentRuntime:
             )
             return "denied"
 
-        if policy_result.decision == PolicyDecision.REQUIRE_APPROVAL:
-            approval = {
-                "approval_id": f"appr_{state['task_id']}_{node_id}",
-                "task_id": state["task_id"],
-                "agent_id": state["agent_id"],
-                "action": capability_ref,
-                "risk_level": capability.spec.risk_level.value,
-                "reason": "Policy requires approval before executing this capability.",
-                "status": "pending",
-            }
-            state["status"] = "waiting_approval"
-            state["approvals"].append(approval)
-            self.store.append_approval(state["task_id"], approval)
-            self.store.append_event(state["task_id"], "approval.requested", approval)
-            return "waiting_approval"
+        if (
+            policy_result.decision == PolicyDecision.REQUIRE_STEP_UP_AUTH
+            and capability_ref not in state["approved_step_up_actions"]
+        ):
+            return self._request_approval(
+                state,
+                node_id,
+                capability_ref,
+                capability.spec.risk_level.value,
+                "step_up_auth",
+                "Policy requires step-up authentication before executing this capability.",
+                policy_result.approvers,
+            )
+
+        if (
+            policy_result.decision == PolicyDecision.REQUIRE_APPROVAL
+            and capability_ref not in state["approved_actions"]
+        ):
+            return self._request_approval(
+                state,
+                node_id,
+                capability_ref,
+                capability.spec.risk_level.value,
+                "approval",
+                "Policy requires approval before executing this capability.",
+                policy_result.approvers,
+            )
+
+        transforms = []
+        if policy_result.decision == PolicyDecision.REQUIRE_TRANSFORM:
+            transforms = policy_result.transforms or ["redact_secrets", "tag_untrusted"]
+            self.store.append_event(
+                state["task_id"],
+                "policy.transform.required",
+                {
+                    "trace_id": state["trace_id"],
+                    "capability": capability_ref,
+                    "transforms": transforms,
+                },
+            )
 
         result = self.tool_gateway.execute(
             ToolCall(
@@ -249,6 +402,7 @@ class AgentRuntime:
                 provider_tool=provider_tool,
                 task_input=state["input"],
                 prior_outputs=state["tool_outputs"],
+                transforms=transforms,
             )
         )
         state["tool_outputs"].append(result.output)
@@ -265,6 +419,7 @@ class AgentRuntime:
             state["task_id"],
             "tool.executed",
             {
+                "trace_id": state["trace_id"],
                 "capability": capability_ref,
                 "provider_tool": provider_tool,
                 "provider_id": result.provider_id,
@@ -272,8 +427,32 @@ class AgentRuntime:
                 "duration_ms": result.duration_ms,
                 "success": result.success,
                 "sanitized": result.sanitized,
+                "transforms": transforms,
+                "output_metadata": result.output.get("metadata", {}),
             },
         )
+        self.store.append_trace(
+            state["task_id"],
+            {
+                "trace_id": state["trace_id"],
+                "node_id": node_id,
+                "type": "tool",
+                "capability": capability_ref,
+                "provider_id": result.provider_id,
+                "tool_name": result.tool_name,
+                "success": result.success,
+            },
+        )
+        self.store.append_metric(
+            state["task_id"],
+            "tool.duration_ms",
+            result.duration_ms,
+            {"provider_id": result.provider_id, "tool_name": result.tool_name},
+        )
+
+        if not result.success:
+            state["status"] = "failed"
+            return "failed"
 
         if capability.spec.evidence.creates_evidence:
             evidence = self.evidence_manager.from_tool_result(
@@ -288,15 +467,84 @@ class AgentRuntime:
             self.store.append_event(
                 state["task_id"],
                 "evidence.created",
-                {"evidence_id": evidence.evidence_id, "capability": capability_ref},
+                {
+                    "trace_id": state["trace_id"],
+                    "evidence_id": evidence.evidence_id,
+                    "capability": capability_ref,
+                },
             )
 
         return "running"
 
+    def _execute_human_approval_node(
+        self,
+        state: dict[str, Any],
+        node: WorkflowNode,
+    ) -> str:
+        action = str(node.config.get("action", node.id))
+        if action in state["approved_actions"]:
+            return "running"
+        return self._request_approval(
+            state,
+            node.id,
+            action,
+            str(node.config.get("risk_level", "medium")),
+            "approval",
+            str(node.config.get("reason", "Workflow requires human approval.")),
+            list(node.config.get("approvers", [])),
+        )
+
+    def _request_approval(
+        self,
+        state: dict[str, Any],
+        node_id: str,
+        action: str,
+        risk_level: str,
+        approval_type: str,
+        reason: str,
+        approvers: list[str],
+    ) -> str:
+        existing = [
+            approval
+            for approval in state["approvals"]
+            if approval.get("node_id") == node_id
+            and approval.get("action") == action
+            and approval.get("status") == "pending"
+        ]
+        if existing:
+            state["status"] = (
+                "waiting_step_up_auth"
+                if approval_type == "step_up_auth"
+                else "waiting_approval"
+            )
+            return state["status"]
+        approval = {
+            "approval_id": f"appr_{state['task_id']}_{node_id}",
+            "approval_type": approval_type,
+            "task_id": state["task_id"],
+            "trace_id": state["trace_id"],
+            "node_id": node_id,
+            "agent_id": state["agent_id"],
+            "action": action,
+            "risk_level": risk_level,
+            "reason": reason,
+            "approvers": approvers,
+            "status": "pending",
+        }
+        state["status"] = (
+            "waiting_step_up_auth"
+            if approval_type == "step_up_auth"
+            else "waiting_approval"
+        )
+        state["approvals"].append(approval)
+        self.store.append_approval(state["task_id"], approval)
+        self.store.append_event(state["task_id"], "approval.requested", approval)
+        return state["status"]
+
     def _execute_model_node(
         self,
         agent: AgentManifest,
-        model_policy: Any,
+        model_policy: ModelPolicyManifest,
         state: dict[str, Any],
         node_id: str,
         node_type: str,
@@ -315,6 +563,7 @@ class AgentRuntime:
                 state["task_id"],
                 "model.called",
                 {
+                    "trace_id": state["trace_id"],
                     "node_id": node_id,
                     "node_type": node_type,
                     "provider": request.provider,
@@ -345,11 +594,12 @@ class AgentRuntime:
             state["observations"].append(observation)
             if node_type == WorkflowNodeType.OUTPUT_COMPOSER.value:
                 state["final_output"] = response.content
-            self.store.append_trace(state["task_id"], observation)
+            self.store.append_trace(state["task_id"], {"trace_id": state["trace_id"], **observation})
             self.store.append_event(
                 state["task_id"],
                 "model.completed",
                 {
+                    "trace_id": state["trace_id"],
                     "node_id": node_id,
                     "provider": response.provider,
                     "model": response.model,
@@ -359,6 +609,12 @@ class AgentRuntime:
                     "content_chars": len(response.content),
                 },
             )
+            self.store.append_metric(
+                state["task_id"],
+                "model.tokens",
+                response.input_tokens + response.output_tokens,
+                {"provider": response.provider, "model": response.model},
+            )
             return "running"
         except Exception as exc:  # noqa: BLE001
             state["status"] = "failed"
@@ -366,6 +622,7 @@ class AgentRuntime:
                 state["task_id"],
                 "model.failed",
                 {
+                    "trace_id": state["trace_id"],
                     "node_id": node_id,
                     "node_type": node_type,
                     "error": str(exc),
@@ -384,6 +641,7 @@ class AgentRuntime:
         state["status"] = status
         response = {
             "task_id": state["task_id"],
+            "trace_id": state["trace_id"],
             "agent_id": state["agent_id"],
             "status": status,
             "summary": self._final_summary(state),
@@ -409,12 +667,16 @@ class AgentRuntime:
         self.store.append_event(
             state["task_id"],
             "checkpoint.created",
-            {"checkpoint_id": checkpoint_id, "node_id": node_id},
+            {
+                "trace_id": state["trace_id"],
+                "checkpoint_id": checkpoint_id,
+                "node_id": node_id,
+            },
         )
 
     def _final_summary(self, state: dict[str, Any]) -> str:
-        if state["status"] == "waiting_approval":
-            return "Task paused because policy requires approval."
+        if state["status"] in {"waiting_approval", "waiting_step_up_auth"}:
+            return "Task paused because policy requires human authorization."
         if state["status"] == "denied":
             return "Task stopped because policy denied an action."
         if state["status"] == "failed":
@@ -425,3 +687,29 @@ class AgentRuntime:
             f"Task completed with {len(state['observations'])} observations and "
             f"{len(state['evidence'])} evidence item(s)."
         )
+
+    def _load_model_policy(self, agent: AgentManifest) -> ModelPolicyManifest:
+        if agent.spec.model_policy is not None:
+            return self.registry.load_model_policy(agent.spec.model_policy)
+        return self.registry.load_model_policy("default-model-policy@1.0.0")
+
+    def _ordered_nodes(self, workflow: WorkflowDefinition) -> list[WorkflowNode]:
+        if not workflow.edges:
+            return workflow.nodes
+        by_id = {node.id: node for node in workflow.nodes}
+        incoming = {edge.target for edge in workflow.edges}
+        start_nodes = [node for node in workflow.nodes if node.id not in incoming]
+        queue = start_nodes or workflow.nodes[:1]
+        ordered: list[WorkflowNode] = []
+        seen: set[str] = set()
+        while queue:
+            node = queue.pop(0)
+            if node.id in seen:
+                continue
+            seen.add(node.id)
+            ordered.append(node)
+            for edge in workflow.edges:
+                if edge.source == node.id and edge.target in by_id:
+                    queue.append(by_id[edge.target])
+        ordered.extend(node for node in workflow.nodes if node.id not in seen)
+        return ordered

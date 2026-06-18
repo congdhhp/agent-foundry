@@ -48,9 +48,9 @@ class AgentFactory:
         self.registry_root = Path(registry_root)
         self.store_root = Path(store_root)
         self.agents_dir = self.store_root / "agents"
-        self.registry = LocalRegistry(self.registry_root)
-        self.skill_registry = SkillRegistry(self.registry_root)
-        self.tool_provider_registry = ToolProviderRegistry(self.registry_root)
+        self.registry = LocalRegistry(self.registry_root, self.store_root)
+        self.skill_registry = SkillRegistry(self.registry_root, self.store_root)
+        self.tool_provider_registry = ToolProviderRegistry(self.registry_root, self.store_root)
 
     def create(self, request: AgentCreateRequest, overwrite: bool = False) -> Path:
         self.agents_dir.mkdir(parents=True, exist_ok=True)
@@ -109,7 +109,7 @@ class AgentFactory:
     def inspect(self, path_or_id: str | Path) -> dict[str, Any]:
         path = self.resolve_agent_path(path_or_id)
         agent = self.load_local(path)
-        validation = AgentDeepValidator(self.registry_root).validate(path)
+        validation = AgentDeepValidator(self.registry_root, self.store_root).validate(path)
         bindings = self.tool_provider_registry.bindings_for_agent(agent)
         skill_details = []
         for skill_ref in agent.spec.skills:
@@ -170,7 +170,7 @@ class AgentFactory:
         errors: list[str] = []
         warnings: list[str] = []
 
-        validation = AgentDeepValidator(self.registry_root).validate(path)
+        validation = AgentDeepValidator(self.registry_root, self.store_root).validate(path)
         errors.extend(validation.errors)
         warnings.extend(validation.warnings)
 
@@ -187,16 +187,16 @@ class AgentFactory:
         eval_suite_reports: list[dict[str, Any]] = []
         eval_runner = EvalRunner(self.registry_root, self.store_root / "evals")
         for eval_case in eval_cases or []:
-            report = eval_runner.run(eval_case, path)
-            eval_reports.append(report.to_dict())
-            if not report.passed:
-                errors.append(f"Eval failed: {report.eval_id}")
+            case_report = eval_runner.run(eval_case, path)
+            eval_reports.append(case_report.to_dict())
+            if not case_report.passed:
+                errors.append(f"Eval failed: {case_report.eval_id}")
         for eval_suite in eval_suites or []:
-            report = eval_runner.run_suite(eval_suite, path)
-            eval_suite_reports.append(report.to_dict())
-            if not report.passed:
+            suite_report = eval_runner.run_suite(eval_suite, path)
+            eval_suite_reports.append(suite_report.to_dict())
+            if not suite_report.passed:
                 errors.append(
-                    f"Eval suite failed: {report.suite_id}@{report.suite_version}"
+                    f"Eval suite failed: {suite_report.suite_id}@{suite_report.suite_version}"
                 )
         if not eval_cases and not eval_suites:
             warnings.append("No eval cases or suites were provided for publish gate.")

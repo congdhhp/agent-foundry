@@ -28,6 +28,14 @@ plan action
 | `REQUIRE_TRANSFORM` | Input/output must be transformed before proceeding |
 | `REQUIRE_STEP_UP_AUTH` | User or approver must re-authenticate or satisfy stronger auth |
 
+Runtime enforcement:
+
+1. `deny` stops execution.
+2. `require_approval` creates a pending approval and pauses the task.
+3. `require_step_up_auth` creates a step-up approval and pauses the task.
+4. `require_transform` attaches configured transforms to the tool call before output is used.
+5. `allow` proceeds normally.
+
 ## Policy Context
 
 Policy evaluation should include:
@@ -257,4 +265,3 @@ MVP must include:
 5. Audit event log.
 6. Deny-by-default for critical actions.
 7. Basic prompt injection guidance for retrieved content.
-

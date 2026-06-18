@@ -34,12 +34,23 @@ class LocalSessionStore:
 
     def append_event(self, task_id: str, event_type: str, payload: dict[str, Any]) -> None:
         event = {
+            "event_id": f"evt_{uuid4().hex[:12]}",
             "event_type": event_type,
             "task_id": task_id,
             "timestamp": utc_now(),
             "payload": payload,
         }
         self._append_jsonl(task_id, "events.jsonl", event)
+
+    def append_metric(self, task_id: str, name: str, value: int | float, tags: dict[str, Any]) -> None:
+        metric = {
+            "metric": name,
+            "task_id": task_id,
+            "timestamp": utc_now(),
+            "value": value,
+            "tags": tags,
+        }
+        self._append_jsonl(task_id, "metrics.jsonl", metric)
 
     def append_trace(self, task_id: str, payload: dict[str, Any]) -> None:
         trace = {"task_id": task_id, "timestamp": utc_now(), **payload}
@@ -50,6 +61,39 @@ class LocalSessionStore:
 
     def append_approval(self, task_id: str, approval: dict[str, Any]) -> None:
         self._append_jsonl(task_id, "approvals.jsonl", approval)
+
+    def set_approval_status(
+        self,
+        task_id: str,
+        approval_id: str,
+        status: str,
+        decided_by: str = "local-user",
+    ) -> dict[str, Any]:
+        approvals = self.read_jsonl(task_id, "approvals.jsonl")
+        updated: dict[str, Any] | None = None
+        for approval in approvals:
+            if approval.get("approval_id") == approval_id:
+                approval["status"] = status
+                approval["decided_by"] = decided_by
+                approval["decided_at"] = utc_now()
+                updated = approval
+                break
+        if updated is None:
+            raise FileNotFoundError(f"Approval not found: {approval_id}")
+        path = self.session_dir(task_id) / "approvals.jsonl"
+        path.write_text(
+            "".join(
+                json.dumps(approval, sort_keys=True, default=str) + "\n"
+                for approval in approvals
+            ),
+            encoding="utf-8",
+        )
+        self.append_event(
+            task_id,
+            f"approval.{status}",
+            {"approval_id": approval_id, "decided_by": decided_by},
+        )
+        return updated
 
     def save_artifact(self, task_id: str, name: str, data: dict[str, Any]) -> Path:
         path = self.session_dir(task_id) / "artifacts" / name
@@ -110,6 +154,35 @@ class LocalSessionStore:
             if line.strip()
         ]
 
+    def latest_checkpoint(self, task_id: str) -> dict[str, Any]:
+        db_path = self.session_dir(task_id) / "checkpoints.sqlite"
+        if not db_path.exists():
+            raise FileNotFoundError(f"Checkpoint database not found for task: {task_id}")
+        conn = sqlite3.connect(db_path)
+        try:
+            row = conn.execute(
+                """
+                select id, workflow_id, node_id, state_json, status, created_at
+                from checkpoints
+                where task_id = ?
+                order by created_at desc
+                limit 1
+                """,
+                (task_id,),
+            ).fetchone()
+        finally:
+            conn.close()
+        if row is None:
+            raise FileNotFoundError(f"No checkpoints found for task: {task_id}")
+        return {
+            "checkpoint_id": row[0],
+            "workflow_id": row[1],
+            "node_id": row[2],
+            "state": json.loads(row[3]),
+            "status": row[4],
+            "created_at": row[5],
+        }
+
     def _append_jsonl(self, task_id: str, name: str, record: dict[str, Any]) -> None:
         session_dir = self.create_session(task_id)
         path = session_dir / name
@@ -136,4 +209,3 @@ class LocalSessionStore:
             conn.commit()
         finally:
             conn.close()
-
