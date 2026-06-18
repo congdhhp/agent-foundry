@@ -1,0 +1,26 @@
+apiVersion: agents.platform/v1
+kind: Agent
+metadata:
+  id: example-agent
+  name: Example Agent
+  owner: team-name
+  labels:
+    domain: example
+    environment: local
+spec:
+  template: generic-task-agent@1.0.0
+  purpose: Describe what this agent does and what outcomes it should produce.
+  skills:
+    - example-skill@1.0.0
+  capabilityBindings:
+    example.read@1.0: example-provider.read
+  knowledgeScopes:
+    - example_docs
+  memoryScopes:
+    - session
+    - task
+  policy: read-only@1.0.0
+  workflow: general_reasoning_graph@1.0.0
+  modelPolicy: default-model-policy@1.0.0
+  evalProfile: example-agent-evals@1.0.0
+

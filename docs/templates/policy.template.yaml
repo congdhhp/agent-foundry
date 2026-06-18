@@ -1,0 +1,21 @@
+apiVersion: agents.platform/v1
+kind: Policy
+metadata:
+  id: example-policy
+  version: 1.0.0
+spec:
+  rules:
+    - match:
+        capability: example.read@1.0
+      decision: allow
+
+    - match:
+        capability: example.write@1.0
+      decision: require_approval
+      approvers:
+        - role:example_owner
+
+    - match:
+        riskLevel: critical
+      decision: deny
+
