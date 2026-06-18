@@ -47,6 +47,7 @@ EXAMPLE_ARTIFACTS = [
     ROOT / "examples" / "eval-suites" / "monitoring-agent-evals.yaml",
     ROOT / "examples" / "eval-suites" / "coding-agent-evals.yaml",
     ROOT / "examples" / "evidence" / "evidence-example.json",
+    ROOT / "examples" / "model-policies" / "default-model-policy.yaml",
     ROOT / "examples" / "skills" / "web-research" / "skill.yaml",
     ROOT / "examples" / "skills" / "web-research" / "evals" / "golden_cases.yaml",
     ROOT / "examples" / "skills" / "bug-fixing" / "skill.yaml",

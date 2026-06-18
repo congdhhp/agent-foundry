@@ -10,6 +10,7 @@ from .models import (
     EvalCase,
     EvalSuiteManifest,
     EvidenceObject,
+    ModelPolicyManifest,
     PolicyManifest,
     SkillManifest,
     ToolProviderManifest,
@@ -31,6 +32,7 @@ ARTIFACT_MODELS: dict[str, ArtifactModel] = {
     "eval": EvalCase,
     "eval-case": EvalCase,
     "eval-suite": EvalSuiteManifest,
+    "model-policy": ModelPolicyManifest,
     "suite": EvalSuiteManifest,
 }
 
@@ -47,6 +49,8 @@ def detect_artifact_type(document: dict[str, Any]) -> str:
         return "tool-provider"
     if kind == "EvalSuite":
         return "eval-suite"
+    if kind == "ModelPolicy":
+        return "model-policy"
     if {"id", "version", "nodes", "runtime"}.issubset(document):
         return "workflow"
     if {"id", "version", "triggers", "requires", "lifecycle_status"}.issubset(document):
@@ -101,6 +105,16 @@ def artifact_summary(artifact: BaseModel) -> dict[str, Any]:
             "id": artifact.metadata.id,
             "version": artifact.metadata.version,
             "rules": len(artifact.spec.rules),
+        }
+    if isinstance(artifact, ModelPolicyManifest):
+        return {
+            "type": "model-policy",
+            "id": artifact.metadata.id,
+            "version": artifact.metadata.version,
+            "default_provider": artifact.spec.default_provider,
+            "default_model": artifact.spec.default_model,
+            "allowed_providers": artifact.spec.allowed_providers,
+            "allowed_models": artifact.spec.allowed_models,
         }
     if isinstance(artifact, ToolProviderManifest):
         return {

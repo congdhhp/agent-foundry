@@ -1,0 +1,138 @@
+{
+  "$defs": {
+    "ModelPolicySpec": {
+      "additionalProperties": false,
+      "properties": {
+        "allowedModels": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Allowedmodels",
+          "type": "array"
+        },
+        "allowedProviders": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Allowedproviders",
+          "type": "array"
+        },
+        "defaultModel": {
+          "title": "Defaultmodel",
+          "type": "string"
+        },
+        "defaultProvider": {
+          "title": "Defaultprovider",
+          "type": "string"
+        },
+        "maxPromptChars": {
+          "default": 12000,
+          "minimum": 1,
+          "title": "Maxpromptchars",
+          "type": "integer"
+        },
+        "redactSecrets": {
+          "default": true,
+          "title": "Redactsecrets",
+          "type": "boolean"
+        },
+        "temperature": {
+          "default": 0.2,
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Temperature",
+          "type": "number"
+        },
+        "timeoutSeconds": {
+          "default": 30,
+          "minimum": 1,
+          "title": "Timeoutseconds",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "defaultProvider",
+        "defaultModel"
+      ],
+      "title": "ModelPolicySpec",
+      "type": "object"
+    },
+    "VersionedMetadata": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Labels",
+          "type": "object"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "owner": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Owner"
+        },
+        "version": {
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "version"
+      ],
+      "title": "VersionedMetadata",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "apiVersion": {
+      "const": "agents.platform/v1",
+      "title": "Apiversion",
+      "type": "string"
+    },
+    "kind": {
+      "const": "ModelPolicy",
+      "title": "Kind",
+      "type": "string"
+    },
+    "metadata": {
+      "$ref": "#/$defs/VersionedMetadata"
+    },
+    "spec": {
+      "$ref": "#/$defs/ModelPolicySpec"
+    }
+  },
+  "required": [
+    "apiVersion",
+    "kind",
+    "metadata",
+    "spec"
+  ],
+  "title": "ModelPolicyManifest",
+  "type": "object"
+}

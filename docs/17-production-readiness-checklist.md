@@ -94,6 +94,20 @@ This checklist defines the minimum gates for moving Agent Foundry components fro
 - [ ] Release gates
 - [ ] Online eval sampling
 
+## Model Plane
+
+- [ ] Model policy registry
+- [ ] Provider allowlist
+- [ ] Model allowlist
+- [ ] Prompt redaction
+- [ ] Prompt size limits
+- [ ] Model call audit events
+- [ ] Retry and fallback policy
+- [ ] Cost accounting
+- [ ] Streaming behavior
+- [ ] Structured output validation
+- [ ] Data residency controls
+
 ## Observability
 
 - [ ] Distributed tracing

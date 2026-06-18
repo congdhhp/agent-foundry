@@ -14,6 +14,7 @@ from .models import (
     AgentManifest,
     CapabilityContractManifest,
     EvalSuiteManifest,
+    ModelPolicyManifest,
     PolicyManifest,
     SkillManifest,
     ToolProviderManifest,
@@ -35,6 +36,7 @@ MANAGED_KINDS = (
     "capability",
     "tool-provider",
     "eval-suite",
+    "model-policy",
 )
 
 
@@ -573,6 +575,7 @@ class ArtifactManager:
             "capability": (self.examples_dir / "capabilities", "capability-contract"),
             "tool-provider": (self.examples_dir / "tools", "tool-provider"),
             "eval-suite": (self.examples_dir / "eval-suites", "eval-suite"),
+            "model-policy": (self.examples_dir / "model-policies", "model-policy"),
         }
         if kind not in mapping:
             raise ValueError(f"Unknown artifact kind: {kind}")
@@ -655,6 +658,7 @@ class ArtifactManager:
             (
                 CapabilityContractManifest,
                 EvalSuiteManifest,
+                ModelPolicyManifest,
                 PolicyManifest,
                 ToolProviderManifest,
             ),
@@ -671,6 +675,7 @@ class ArtifactManager:
             "capability": "capability-contract",
             "tool-provider": "tool-provider",
             "eval-suite": "eval-suite",
+            "model-policy": "model-policy",
         }[kind]
 
     def _default_status(self, kind: str, artifact: BaseModel) -> str:
@@ -686,6 +691,7 @@ class ArtifactManager:
                 "skills": artifact.spec.skills,
                 "policies": [artifact.spec.policy],
                 "workflows": [artifact.spec.workflow],
+                "model_policies": [artifact.spec.model_policy] if artifact.spec.model_policy else [],
                 "capabilities": sorted(artifact.spec.capability_bindings),
                 "eval_suites": [artifact.spec.eval_profile] if artifact.spec.eval_profile else [],
             }
@@ -719,6 +725,11 @@ class ArtifactManager:
             }
         if isinstance(artifact, EvalSuiteManifest):
             return {"eval_cases": artifact.spec.cases}
+        if isinstance(artifact, ModelPolicyManifest):
+            return {
+                "providers": artifact.spec.allowed_providers,
+                "models": artifact.spec.allowed_models,
+            }
         return {}
 
     def _validate_skill_dependencies(self, skill: SkillManifest) -> list[str]:
@@ -774,6 +785,8 @@ class ArtifactManager:
             return ref in agent.spec.capability_bindings
         if kind == "eval-suite":
             return ref == agent.spec.eval_profile
+        if kind == "model-policy":
+            return ref == agent.spec.model_policy
         return False
 
     def _eval_suites_for_agents(

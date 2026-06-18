@@ -62,6 +62,9 @@ def _run(args: argparse.Namespace) -> int:
             store_root=Path(args.store),
             workspace=Path(args.workspace),
             dry_run=not args.allow_writes,
+            model_provider=args.model_provider,
+            model=args.model,
+            allow_model_calls=args.allow_model_calls,
         )
     )
     response = runtime.run(args.agent, args.task)
@@ -516,6 +519,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--allow-writes",
         action="store_true",
         help="Allow non-dry-run tool adapters where supported",
+    )
+    run_parser.add_argument("--model-provider")
+    run_parser.add_argument("--model")
+    run_parser.add_argument(
+        "--allow-model-calls",
+        action="store_true",
+        help="Allow configured model provider network calls. Defaults to deterministic dry-run.",
     )
     run_parser.set_defaults(func=_run)
 

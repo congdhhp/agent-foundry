@@ -1,0 +1,22 @@
+apiVersion: agents.platform/v1
+kind: ModelPolicy
+metadata:
+  id: default-model-policy
+  version: 1.0.0
+  name: Default Model Policy
+  owner: ai-platform-team
+  labels:
+    environment: local
+spec:
+  defaultProvider: deterministic
+  defaultModel: deterministic-local
+  allowedProviders:
+    - deterministic
+    - openai
+  allowedModels:
+    - deterministic-local
+    - gpt-4.1-mini
+  maxPromptChars: 12000
+  temperature: 0.2
+  timeoutSeconds: 30
+  redactSecrets: true

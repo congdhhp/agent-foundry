@@ -216,11 +216,30 @@ Exit criteria:
 
 Candidate follow-up phases:
 
-1. Model provider integration and real LLM execution.
-2. Remote registry API and multi-user governance.
-3. Human approval console.
-4. Enterprise authentication, authorization and tenant isolation.
-5. Deployment packaging and artifact bundle promotion.
+1. Remote registry API and multi-user governance.
+2. Human approval console.
+3. Enterprise authentication, authorization and tenant isolation.
+4. Deployment packaging and artifact bundle promotion.
+
+### Phase 7: Model Plane and Real LLM Execution
+
+Deliverables:
+
+1. Model policy artifact schema.
+2. Model gateway abstraction.
+3. Deterministic local model provider for tests and evals.
+4. Optional real model provider integration.
+5. Runtime model calls for reasoning, evaluator and output composer nodes.
+6. Model call audit events.
+7. CLI model provider options.
+
+Exit criteria:
+
+1. Agent runtime emits model events for model workflow nodes.
+2. Dry-run execution remains deterministic and offline.
+3. Real model calls require explicit opt-in.
+4. Model provider and model are constrained by model policy.
+5. Existing eval suites continue to pass.
 
 ## MVP Success Criteria
 

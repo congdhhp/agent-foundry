@@ -39,6 +39,12 @@ class AgentDeepValidator:
         except Exception as exc:  # noqa: BLE001
             errors.append(f"Workflow cannot be resolved: {exc}")
 
+        if agent.spec.model_policy is not None:
+            try:
+                self.registry.load_model_policy(agent.spec.model_policy)
+            except Exception as exc:  # noqa: BLE001
+                errors.append(f"Model policy cannot be resolved: {exc}")
+
         required_capabilities: set[str] = set()
         for skill_ref in agent.spec.skills:
             try:

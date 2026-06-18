@@ -273,6 +273,24 @@ class PolicyManifest(StrictModel):
     spec: PolicySpec
 
 
+class ModelPolicySpec(StrictModel):
+    default_provider: str = Field(alias="defaultProvider")
+    default_model: str = Field(alias="defaultModel")
+    allowed_providers: list[str] = Field(default_factory=list, alias="allowedProviders")
+    allowed_models: list[str] = Field(default_factory=list, alias="allowedModels")
+    max_prompt_chars: int = Field(default=12000, alias="maxPromptChars", ge=1)
+    temperature: float = Field(default=0.2, ge=0, le=2)
+    timeout_seconds: int = Field(default=30, alias="timeoutSeconds", ge=1)
+    redact_secrets: bool = Field(default=True, alias="redactSecrets")
+
+
+class ModelPolicyManifest(StrictModel):
+    api_version: Literal["agents.platform/v1"] = Field(alias="apiVersion")
+    kind: Literal["ModelPolicy"]
+    metadata: VersionedMetadata
+    spec: ModelPolicySpec
+
+
 class WorkflowNode(StrictModel):
     id: str
     type: WorkflowNodeType

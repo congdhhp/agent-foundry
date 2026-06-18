@@ -15,7 +15,7 @@ This documentation set turns the architecture blueprint into an enterprise-grade
 | Audience | Recommended path |
 |---|---|
 | Founder / CTO / Product Owner | [Executive Overview](./00-executive-overview.md), [Product Requirements](./01-product-requirements.md), [MVP Delivery Plan](./11-mvp-delivery-plan.md) |
-| Solution Architect / Technical Lead | [Architecture Overview](./02-architecture-overview.md), [Domain and Manifest Model](./03-domain-and-manifest-model.md), [Runtime and Workflow](./06-runtime-workflow.md) |
+| Solution Architect / Technical Lead | [Architecture Overview](./02-architecture-overview.md), [Domain and Manifest Model](./03-domain-and-manifest-model.md), [Runtime and Workflow](./06-runtime-workflow.md), [Model Plane](./19-model-plane.md) |
 | Senior / Staff Engineer | [Skill System](./04-skill-system.md), [Capability and Tool Plane](./05-capability-tool-plane.md), [Artifact Management Plane](./18-artifact-management-plane.md), [API, CLI and Storage](./09-api-cli-storage.md), [Engineering Standards](./13-engineering-standards.md) |
 | Security / Governance | [Policy, Security and Governance](./07-policy-security-governance.md), [Evidence, Evaluation and Observability](./08-evidence-evaluation-observability.md), [Risk Register](./14-risk-register.md) |
 | Platform / SRE | [Deployment and Operations](./10-deployment-operations.md), [API, CLI and Storage](./09-api-cli-storage.md), [Risk Register](./14-risk-register.md) |
@@ -43,6 +43,7 @@ This documentation set turns the architecture blueprint into an enterprise-grade
 | [16 Architecture Decisions](./16-architecture-decisions.md) | ADR summary and consequences |
 | [17 Production Readiness Checklist](./17-production-readiness-checklist.md) | Release readiness gates for runtime, skills, tools, policy and operations |
 | [18 Artifact Management Plane](./18-artifact-management-plane.md) | Enterprise-grade lifecycle, versioning, publishing and impact analysis for skills, policies and workflows |
+| [19 Model Plane](./19-model-plane.md) | Model policy, provider abstraction, prompt composition and runtime model events |
 
 ## Templates
 

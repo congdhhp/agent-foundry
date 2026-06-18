@@ -84,7 +84,7 @@ Recommended first reference agents:
 
 ## Repository Status
 
-This repository currently contains the architecture blueprint, enterprise-grade documentation baseline and implementation through Phase 6 local artifact management plane.
+This repository currently contains the architecture blueprint, enterprise-grade documentation baseline and implementation through Phase 7 model plane and deterministic local model execution.
 
 ## Developer Quickstart
 
@@ -106,6 +106,15 @@ Run a local Phase 1 task:
 
 ```bash
 agent-foundry run examples/agents/research-agent.yaml "Compare capability contracts with direct tool binding."
+```
+
+Run with explicit model options:
+
+```bash
+agent-foundry run examples/agents/research-agent.yaml \
+  "Compare capability contracts with direct tool binding." \
+  --model-provider deterministic \
+  --model deterministic-local
 ```
 
 Inspect local sessions and task data:

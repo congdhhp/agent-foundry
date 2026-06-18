@@ -9,6 +9,7 @@ from .loader import load_document
 from .models import (
     AgentManifest,
     CapabilityContractManifest,
+    ModelPolicyManifest,
     PolicyManifest,
     SkillManifest,
     ToolProviderManifest,
@@ -59,6 +60,15 @@ class LocalRegistry:
         ref = ArtifactRef.parse(ref_value)
         return self._find_by_ref(
             self.examples_dir / "policies", ref, PolicyManifest, "policy"
+        )
+
+    def load_model_policy(self, ref_value: str) -> ModelPolicyManifest:
+        ref = ArtifactRef.parse(ref_value)
+        return self._find_by_ref(
+            self.examples_dir / "model-policies",
+            ref,
+            ModelPolicyManifest,
+            "model-policy",
         )
 
     def list_tool_providers(self) -> list[ToolProviderManifest]:
@@ -134,7 +144,15 @@ class LocalRegistry:
             return artifact.id, artifact.version
         if isinstance(artifact, WorkflowDefinition):
             return artifact.id, artifact.version
-        if isinstance(artifact, (CapabilityContractManifest, PolicyManifest, ToolProviderManifest)):
+        if isinstance(
+            artifact,
+            (
+                CapabilityContractManifest,
+                ModelPolicyManifest,
+                PolicyManifest,
+                ToolProviderManifest,
+            ),
+        ):
             return artifact.metadata.id, artifact.metadata.version
         if isinstance(artifact, AgentManifest):
             return artifact.metadata.id, "0.0.0"

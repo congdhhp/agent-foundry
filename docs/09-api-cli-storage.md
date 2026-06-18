@@ -61,6 +61,15 @@ agent run monitoring-agent \
   "Investigate checkout latency spike from the last 30 minutes"
 ```
 
+Run task with model options:
+
+```bash
+agent-foundry run examples/agents/research-agent.yaml \
+  "Research capability contracts" \
+  --model-provider deterministic \
+  --model deterministic-local
+```
+
 Inspect:
 
 ```bash
