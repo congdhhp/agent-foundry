@@ -1,0 +1,20 @@
+apiVersion: agents.platform/v1
+kind: ToolProvider
+metadata:
+  id: sandbox
+  version: 1.0.0
+  name: Sandbox Command Provider
+  owner: engineering-platform-team
+spec:
+  protocol: in_process
+  transport: local
+  capabilities:
+    - contract: shell.run@1.0
+      tool: run_command
+      riskLevel: high
+  tenantScope: local
+  outputSanitization:
+    redactSecrets: true
+    maxPayloadBytes: 1000000
+    tagUntrusted: false
+

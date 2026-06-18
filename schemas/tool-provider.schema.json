@@ -1,0 +1,202 @@
+{
+  "$defs": {
+    "RiskLevel": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "RiskLevel",
+      "type": "string"
+    },
+    "ToolProviderCapability": {
+      "additionalProperties": false,
+      "properties": {
+        "contract": {
+          "title": "Contract",
+          "type": "string"
+        },
+        "riskLevel": {
+          "$ref": "#/$defs/RiskLevel"
+        },
+        "tool": {
+          "title": "Tool",
+          "type": "string"
+        }
+      },
+      "required": [
+        "contract",
+        "tool",
+        "riskLevel"
+      ],
+      "title": "ToolProviderCapability",
+      "type": "object"
+    },
+    "ToolProviderOutputSanitization": {
+      "additionalProperties": false,
+      "properties": {
+        "maxPayloadBytes": {
+          "default": 1000000,
+          "title": "Maxpayloadbytes",
+          "type": "integer"
+        },
+        "redactSecrets": {
+          "default": true,
+          "title": "Redactsecrets",
+          "type": "boolean"
+        },
+        "tagUntrusted": {
+          "default": true,
+          "title": "Taguntrusted",
+          "type": "boolean"
+        }
+      },
+      "title": "ToolProviderOutputSanitization",
+      "type": "object"
+    },
+    "ToolProviderSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "authProfile": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Authprofile"
+        },
+        "capabilities": {
+          "items": {
+            "$ref": "#/$defs/ToolProviderCapability"
+          },
+          "title": "Capabilities",
+          "type": "array"
+        },
+        "endpoint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Endpoint"
+        },
+        "outputSanitization": {
+          "$ref": "#/$defs/ToolProviderOutputSanitization"
+        },
+        "protocol": {
+          "title": "Protocol",
+          "type": "string"
+        },
+        "tenantScope": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tenantscope"
+        },
+        "transport": {
+          "default": "in_process",
+          "title": "Transport",
+          "type": "string"
+        }
+      },
+      "required": [
+        "protocol",
+        "capabilities"
+      ],
+      "title": "ToolProviderSpec",
+      "type": "object"
+    },
+    "VersionedMetadata": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Labels",
+          "type": "object"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "owner": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Owner"
+        },
+        "version": {
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "version"
+      ],
+      "title": "VersionedMetadata",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "apiVersion": {
+      "const": "agents.platform/v1",
+      "title": "Apiversion",
+      "type": "string"
+    },
+    "kind": {
+      "const": "ToolProvider",
+      "title": "Kind",
+      "type": "string"
+    },
+    "metadata": {
+      "$ref": "#/$defs/VersionedMetadata"
+    },
+    "spec": {
+      "$ref": "#/$defs/ToolProviderSpec"
+    }
+  },
+  "required": [
+    "apiVersion",
+    "kind",
+    "metadata",
+    "spec"
+  ],
+  "title": "ToolProviderManifest",
+  "type": "object"
+}

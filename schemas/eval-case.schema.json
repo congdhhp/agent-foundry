@@ -18,6 +18,11 @@
           "title": "Policy",
           "type": "object"
         },
+        "provider_trajectory": {
+          "additionalProperties": true,
+          "title": "Provider Trajectory",
+          "type": "object"
+        },
         "safety": {
           "additionalProperties": true,
           "title": "Safety",

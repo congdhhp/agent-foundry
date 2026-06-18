@@ -15,6 +15,11 @@ expected:
     must_not_call:
       - file.patch@1.0
       - shell.run@1.0
+  provider_trajectory:
+    must_call:
+      - web.search@1.0 -> browser.search
+      - web.fetch@1.0 -> browser.fetch
+      - citation.extract@1.0 -> browser.extract
   policy:
     must_deny:
       - file.patch@1.0

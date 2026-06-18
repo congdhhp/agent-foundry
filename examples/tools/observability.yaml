@@ -1,0 +1,29 @@
+apiVersion: agents.platform/v1
+kind: ToolProvider
+metadata:
+  id: observability
+  version: 1.0.0
+  name: Observability Mock Provider
+  owner: sre-platform-team
+spec:
+  protocol: in_process
+  transport: local
+  capabilities:
+    - contract: metrics.query@1.0
+      tool: query_metrics
+      riskLevel: low
+    - contract: logs.search@1.0
+      tool: search_logs
+      riskLevel: medium
+    - contract: traces.search@1.0
+      tool: search_traces
+      riskLevel: low
+    - contract: deployments.read@1.0
+      tool: read_deployments
+      riskLevel: low
+  tenantScope: local
+  outputSanitization:
+    redactSecrets: true
+    maxPayloadBytes: 1000000
+    tagUntrusted: false
+

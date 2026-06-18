@@ -13,6 +13,7 @@ from .runtime import AgentRuntime, RuntimeOptions
 from .schemas import export_schemas, schema_names
 from .skills import SkillRegistry
 from .storage import LocalSessionStore
+from .tool_providers import ToolProviderRegistry
 from .validation import artifact_summary, validate_document
 
 
@@ -153,6 +154,70 @@ def _eval(args: argparse.Namespace) -> int:
     raise ValueError(f"Unknown eval command: {args.eval_command}")
 
 
+def _tools(args: argparse.Namespace) -> int:
+    providers = ToolProviderRegistry(args.registry_root)
+    if args.tools_command == "list":
+        print(
+            dump_json(
+                [
+                    {
+                        "id": provider.metadata.id,
+                        "version": provider.metadata.version,
+                        "protocol": provider.spec.protocol,
+                        "transport": provider.spec.transport,
+                        "capabilities": [
+                            {
+                                "contract": capability.contract,
+                                "tool": capability.tool,
+                                "risk_level": capability.risk_level,
+                            }
+                            for capability in provider.spec.capabilities
+                        ],
+                    }
+                    for provider in providers.list()
+                ]
+            )
+        )
+        return 0
+    if args.tools_command == "inspect":
+        provider = providers.inspect(args.provider)
+        print(dump_json(provider.model_dump(mode="json", by_alias=True, exclude_none=True)))
+        return 0
+    if args.tools_command == "validate":
+        result = providers.validate_all()
+        print(
+            dump_json(
+                {
+                    "valid": result.valid,
+                    "errors": result.errors,
+                    "warnings": result.warnings,
+                }
+            )
+        )
+        return 0 if result.valid else 1
+    if args.tools_command == "bindings":
+        document = load_document(args.agent)
+        agent = validate_document(document, "agent")
+        bindings = providers.bindings_for_agent(agent)
+        print(
+            dump_json(
+                [
+                    {
+                        "capability": binding.capability,
+                        "provider_tool": binding.provider_tool,
+                        "provider_id": binding.provider_id,
+                        "tool_name": binding.tool_name,
+                        "valid": binding.valid,
+                        "error": binding.error,
+                    }
+                    for binding in bindings
+                ]
+            )
+        )
+        return 0 if all(binding.valid for binding in bindings) else 1
+    raise ValueError(f"Unknown tools command: {args.tools_command}")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="agent-foundry")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -227,6 +292,19 @@ def build_parser() -> argparse.ArgumentParser:
     eval_run.add_argument("eval_case")
     eval_run.add_argument("--agent", required=True)
     eval_parser.set_defaults(func=_eval)
+
+    tools_parser = subparsers.add_parser("tools", help="Inspect tool providers")
+    tools_parser.add_argument("--registry-root", default=".")
+    tools_subparsers = tools_parser.add_subparsers(dest="tools_command", required=True)
+    tools_subparsers.add_parser("list", help="List tool providers")
+    tools_subparsers.add_parser("validate", help="Validate tool providers")
+    tools_inspect = tools_subparsers.add_parser("inspect", help="Inspect a provider")
+    tools_inspect.add_argument("provider")
+    tools_bindings = tools_subparsers.add_parser(
+        "bindings", help="Validate an agent's provider bindings"
+    )
+    tools_bindings.add_argument("agent")
+    tools_parser.set_defaults(func=_tools)
 
     return parser
 

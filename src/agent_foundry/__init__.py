@@ -7,10 +7,12 @@ from .models import (
     EvidenceObject,
     PolicyManifest,
     SkillManifest,
+    ToolProviderManifest,
     WorkflowDefinition,
 )
 from .runtime import AgentRuntime, RuntimeOptions
 from .skills import SkillPackage, SkillRegistry, SkillSelector
+from .tool_providers import ToolProviderRegistry
 
 __all__ = [
     "AgentRuntime",
@@ -24,6 +26,8 @@ __all__ = [
     "SkillPackage",
     "SkillRegistry",
     "SkillSelector",
+    "ToolProviderRegistry",
+    "ToolProviderManifest",
     "WorkflowDefinition",
 ]
 

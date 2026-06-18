@@ -1,0 +1,26 @@
+apiVersion: agents.platform/v1
+kind: ToolProvider
+metadata:
+  id: browser
+  version: 1.0.0
+  name: Browser Mock Provider
+  owner: ai-platform-team
+spec:
+  protocol: in_process
+  transport: local
+  capabilities:
+    - contract: web.search@1.0
+      tool: search
+      riskLevel: low
+    - contract: web.fetch@1.0
+      tool: fetch
+      riskLevel: low
+    - contract: citation.extract@1.0
+      tool: extract
+      riskLevel: low
+  tenantScope: local
+  outputSanitization:
+    redactSecrets: true
+    maxPayloadBytes: 1000000
+    tagUntrusted: true
+

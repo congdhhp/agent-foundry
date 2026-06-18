@@ -217,6 +217,43 @@ class CapabilityContractManifest(StrictModel):
     spec: CapabilitySpec
 
 
+class ToolProviderCapability(StrictModel):
+    contract: str
+    tool: str
+    risk_level: RiskLevel = Field(alias="riskLevel")
+
+    @field_validator("contract")
+    @classmethod
+    def validate_contract(cls, value: str) -> str:
+        return _validate_capability_ref(value, "contract")
+
+
+class ToolProviderOutputSanitization(StrictModel):
+    redact_secrets: bool = Field(default=True, alias="redactSecrets")
+    max_payload_bytes: int = Field(default=1000000, alias="maxPayloadBytes")
+    tag_untrusted: bool = Field(default=True, alias="tagUntrusted")
+
+
+class ToolProviderSpec(StrictModel):
+    protocol: str
+    transport: str = "in_process"
+    endpoint: str | None = None
+    auth_profile: str | None = Field(default=None, alias="authProfile")
+    capabilities: list[ToolProviderCapability]
+    tenant_scope: str | None = Field(default=None, alias="tenantScope")
+    output_sanitization: ToolProviderOutputSanitization = Field(
+        default_factory=ToolProviderOutputSanitization,
+        alias="outputSanitization",
+    )
+
+
+class ToolProviderManifest(StrictModel):
+    api_version: Literal["agents.platform/v1"] = Field(alias="apiVersion")
+    kind: Literal["ToolProvider"]
+    metadata: VersionedMetadata
+    spec: ToolProviderSpec
+
+
 class PolicyRule(StrictModel):
     match: dict[str, Any]
     decision: PolicyDecision
@@ -293,6 +330,7 @@ class EvalTask(StrictModel):
 class EvalExpected(StrictModel):
     selected_skills: dict[str, Any] = Field(default_factory=dict)
     tool_trajectory: dict[str, Any] = Field(default_factory=dict)
+    provider_trajectory: dict[str, Any] = Field(default_factory=dict)
     policy: dict[str, Any] = Field(default_factory=dict)
     output: dict[str, Any] = Field(default_factory=dict)
     grounding: dict[str, Any] = Field(default_factory=dict)

@@ -67,6 +67,7 @@ class EvalRunner:
         checks = [
             *self._check_selected_skills(eval_case, events),
             *self._check_tool_trajectory(eval_case, events),
+            *self._check_provider_trajectory(eval_case, events),
             *self._check_policy(eval_case, events),
             *self._check_safety(eval_case, response),
         ]
@@ -118,6 +119,34 @@ class EvalRunner:
                 EvalCheck(
                     name=f"must_not_call:{capability}",
                     passed=capability not in executed,
+                    detail=f"executed={executed}",
+                )
+            )
+        return checks
+
+    def _check_provider_trajectory(
+        self, eval_case: EvalCase, events: list[dict[str, Any]]
+    ) -> list[EvalCheck]:
+        expected = eval_case.expected.provider_trajectory
+        executed = [
+            f"{event['payload'].get('capability')} -> {event['payload'].get('provider_tool')}"
+            for event in events
+            if event["event_type"] == "tool.executed"
+        ]
+        checks: list[EvalCheck] = []
+        for provider_call in expected.get("must_call", []):
+            checks.append(
+                EvalCheck(
+                    name=f"provider_must_call:{provider_call}",
+                    passed=provider_call in executed,
+                    detail=f"executed={executed}",
+                )
+            )
+        for provider_call in expected.get("must_not_call", []):
+            checks.append(
+                EvalCheck(
+                    name=f"provider_must_not_call:{provider_call}",
+                    passed=provider_call not in executed,
                     detail=f"executed={executed}",
                 )
             )
@@ -184,4 +213,3 @@ class EvalRunner:
                 )
             )
         return checks
-

@@ -15,7 +15,7 @@ spec:
   capabilityBindings:
     web.search@1.0: browser.search
     web.fetch@1.0: browser.fetch
-    citation.extract@1.0: citation.extract
+    citation.extract@1.0: browser.extract
   knowledgeScopes:
     - public_web
   memoryScopes:

@@ -1,17 +1,28 @@
 from __future__ import annotations
 
+import json
+import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from time import perf_counter
 from typing import Any
+
+from .models import ToolProviderManifest, ToolProviderOutputSanitization
+from .registry import LocalRegistry
 
 
 @dataclass(frozen=True)
 class ToolExecutionResult:
     capability: str
     provider_tool: str
+    provider_id: str
+    tool_name: str
     output: dict[str, Any]
     summary: str
+    duration_ms: int
+    success: bool
+    sanitized: bool
 
 
 class ToolExecutor:
@@ -45,8 +56,13 @@ class ToolExecutor:
         return ToolExecutionResult(
             capability=capability_ref,
             provider_tool=provider_tool,
+            provider_id=provider_tool.split(".", 1)[0],
+            tool_name=provider_tool.split(".", 1)[1] if "." in provider_tool else provider_tool,
             output=output,
             summary=summary,
+            duration_ms=0,
+            success=True,
+            sanitized=False,
         )
 
     def _web_search(
@@ -233,3 +249,123 @@ class ToolExecutor:
         if not str(target).startswith(str(self.workspace)):
             raise ValueError(f"Path escapes workspace: {target}")
         return target
+
+
+@dataclass(frozen=True)
+class ToolCall:
+    task_id: str
+    capability_ref: str
+    provider_tool: str
+    task_input: str
+    prior_outputs: list[dict[str, Any]]
+
+
+@dataclass(frozen=True)
+class ProviderBinding:
+    provider: ToolProviderManifest
+    tool_name: str
+
+    @property
+    def provider_id(self) -> str:
+        return self.provider.metadata.id
+
+
+class OutputSanitizer:
+    SECRET_PATTERNS = [
+        re.compile(r"(?i)(api[_-]?key\s*[:=]\s*)[A-Za-z0-9_\-]{8,}"),
+        re.compile(r"(?i)(token\s*[:=]\s*)[A-Za-z0-9_\-\.]{8,}"),
+        re.compile(r"(?i)(password\s*[:=]\s*)\S+"),
+        re.compile(r"sk-[A-Za-z0-9]{16,}"),
+    ]
+
+    def sanitize(
+        self,
+        output: dict[str, Any],
+        policy: ToolProviderOutputSanitization,
+    ) -> tuple[dict[str, Any], bool]:
+        sanitized_output = self._redact(output) if policy.redact_secrets else dict(output)
+        serialized = json.dumps(sanitized_output, sort_keys=True, default=str)
+        changed = serialized != json.dumps(output, sort_keys=True, default=str)
+        if len(serialized.encode("utf-8")) > policy.max_payload_bytes:
+            sanitized_output = {
+                "truncated": True,
+                "metadata": {
+                    "originalBytes": len(serialized.encode("utf-8")),
+                    "maxPayloadBytes": policy.max_payload_bytes,
+                },
+            }
+            changed = True
+        metadata = sanitized_output.setdefault("metadata", {})
+        metadata["sanitized"] = True
+        if policy.tag_untrusted:
+            metadata["trusted"] = False
+        return sanitized_output, True or changed
+
+    def _redact(self, value: Any) -> Any:
+        if isinstance(value, dict):
+            return {key: self._redact(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [self._redact(item) for item in value]
+        if isinstance(value, str):
+            redacted = value
+            for pattern in self.SECRET_PATTERNS:
+                redacted = pattern.sub(self._replace_secret, redacted)
+            return redacted
+        return value
+
+    def _replace_secret(self, match: re.Match[str]) -> str:
+        if match.lastindex:
+            return f"{match.group(1)}[REDACTED]"
+        return "[REDACTED]"
+
+
+class ToolGateway:
+    def __init__(
+        self,
+        registry: LocalRegistry,
+        workspace: str | Path = ".",
+        dry_run: bool = True,
+    ) -> None:
+        self.registry = registry
+        self.executor = ToolExecutor(workspace, dry_run)
+        self.sanitizer = OutputSanitizer()
+
+    def resolve(self, capability_ref: str, provider_tool: str) -> ProviderBinding:
+        provider, tool_name = self.registry.resolve_provider_tool(
+            capability_ref, provider_tool
+        )
+        return ProviderBinding(provider=provider, tool_name=tool_name)
+
+    def execute(self, call: ToolCall) -> ToolExecutionResult:
+        binding = self.resolve(call.capability_ref, call.provider_tool)
+        started = perf_counter()
+        try:
+            raw = self.executor.execute(
+                call.capability_ref,
+                call.provider_tool,
+                call.task_input,
+                call.prior_outputs,
+            )
+            output, sanitized = self.sanitizer.sanitize(
+                raw.output,
+                binding.provider.spec.output_sanitization,
+            )
+            success = True
+            summary = raw.summary
+        except Exception as exc:  # noqa: BLE001 - gateway returns structured tool failures
+            output = {"error": str(exc), "metadata": {"sanitized": True}}
+            sanitized = True
+            success = False
+            summary = f"Tool execution failed: {exc}"
+        duration_ms = int((perf_counter() - started) * 1000)
+        return ToolExecutionResult(
+            capability=call.capability_ref,
+            provider_tool=call.provider_tool,
+            provider_id=binding.provider_id,
+            tool_name=binding.tool_name,
+            output=output,
+            summary=summary,
+            duration_ms=duration_ms,
+            success=success,
+            sanitized=sanitized,
+        )

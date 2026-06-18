@@ -51,11 +51,18 @@ class AgentDeepValidator:
             if capability_ref not in agent.spec.capability_bindings:
                 errors.append(f"Missing capability binding: {capability_ref}")
                 continue
+            provider_tool = agent.spec.capability_bindings[capability_ref]
             try:
                 capability = self.registry.load_capability(capability_ref)
             except Exception as exc:  # noqa: BLE001
                 errors.append(f"Capability cannot be resolved: {capability_ref}: {exc}")
                 continue
+            try:
+                self.registry.resolve_provider_tool(capability_ref, provider_tool)
+            except Exception as exc:  # noqa: BLE001
+                errors.append(
+                    f"Provider binding invalid for {capability_ref} -> {provider_tool}: {exc}"
+                )
             if policy is not None:
                 decision = self.policy_engine.evaluate(policy, capability_ref, capability)
                 if decision.decision == PolicyDecision.DENY:
@@ -66,4 +73,3 @@ class AgentDeepValidator:
                     )
 
         return AgentValidationResult(valid=not errors, errors=errors, warnings=warnings)
-

@@ -123,6 +123,9 @@ agent-foundry skills list
 agent-foundry skills validate examples/skills/web-research
 agent-foundry agent validate examples/agents/research-agent.yaml
 agent-foundry eval run examples/evals/research_basic.yaml --agent examples/agents/research-agent.yaml
+agent-foundry tools list
+agent-foundry tools validate
+agent-foundry tools bindings examples/agents/research-agent.yaml
 ```
 
 Inspect an artifact:

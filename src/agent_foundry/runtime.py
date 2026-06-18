@@ -11,7 +11,7 @@ from .policy import PolicyEngine
 from .registry import LocalRegistry
 from .skills import SkillRegistry, SkillSelector
 from .storage import LocalSessionStore, new_task_id
-from .tools import ToolExecutor
+from .tools import ToolCall, ToolGateway
 
 
 @dataclass(frozen=True)
@@ -32,7 +32,9 @@ class AgentRuntime:
         self.store = LocalSessionStore(self.options.store_root)
         self.policy_engine = PolicyEngine()
         self.evidence_manager = EvidenceManager()
-        self.tool_executor = ToolExecutor(self.options.workspace, self.options.dry_run)
+        self.tool_gateway = ToolGateway(
+            self.registry, self.options.workspace, self.options.dry_run
+        )
 
     def run(self, agent_path_or_ref: str | Path, task_input: str) -> dict[str, Any]:
         task_id = new_task_id()
@@ -219,24 +221,37 @@ class AgentRuntime:
             self.store.append_event(state["task_id"], "approval.requested", approval)
             return "waiting_approval"
 
-        result = self.tool_executor.execute(
-            capability_ref,
-            provider_tool,
-            state["input"],
-            state["tool_outputs"],
+        result = self.tool_gateway.execute(
+            ToolCall(
+                task_id=state["task_id"],
+                capability_ref=capability_ref,
+                provider_tool=provider_tool,
+                task_input=state["input"],
+                prior_outputs=state["tool_outputs"],
+            )
         )
         state["tool_outputs"].append(result.output)
         state["observations"].append(
             {
                 "node_id": node_id,
                 "capability": capability_ref,
+                "provider_id": result.provider_id,
+                "tool_name": result.tool_name,
                 "summary": result.summary,
             }
         )
         self.store.append_event(
             state["task_id"],
             "tool.executed",
-            {"capability": capability_ref, "provider_tool": provider_tool},
+            {
+                "capability": capability_ref,
+                "provider_tool": provider_tool,
+                "provider_id": result.provider_id,
+                "tool_name": result.tool_name,
+                "duration_ms": result.duration_ms,
+                "success": result.success,
+                "sanitized": result.sanitized,
+            },
         )
 
         if capability.spec.evidence.creates_evidence:

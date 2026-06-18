@@ -11,6 +11,7 @@ from .models import (
     CapabilityContractManifest,
     PolicyManifest,
     SkillManifest,
+    ToolProviderManifest,
     WorkflowDefinition,
 )
 from .refs import ArtifactRef
@@ -57,6 +58,38 @@ class LocalRegistry:
             self.examples_dir / "policies", ref, PolicyManifest, "policy"
         )
 
+    def list_tool_providers(self) -> list[ToolProviderManifest]:
+        tools_dir = self.examples_dir / "tools"
+        if not tools_dir.exists():
+            return []
+        providers: list[ToolProviderManifest] = []
+        for path in sorted(tools_dir.glob("*.yaml")) + sorted(tools_dir.glob("*.yml")):
+            providers.append(self._load_file(path, ToolProviderManifest, "tool-provider"))
+        return providers
+
+    def load_tool_provider(self, provider_id: str) -> ToolProviderManifest:
+        tools_dir = self.examples_dir / "tools"
+        for provider in self.list_tool_providers():
+            if provider.metadata.id == provider_id:
+                return provider
+        raise FileNotFoundError(f"Could not resolve tool provider {provider_id}")
+
+    def resolve_provider_tool(
+        self, capability_ref: str, provider_tool: str
+    ) -> tuple[ToolProviderManifest, str]:
+        if "." not in provider_tool:
+            raise ValueError(
+                f"Provider tool binding must look like '<provider>.<tool>': {provider_tool}"
+            )
+        provider_id, tool_name = provider_tool.split(".", 1)
+        provider = self.load_tool_provider(provider_id)
+        for capability in provider.spec.capabilities:
+            if capability.contract == capability_ref and capability.tool == tool_name:
+                return provider, tool_name
+        raise ValueError(
+            f"Provider {provider_id} does not implement {capability_ref} via tool {tool_name}"
+        )
+
     def load_workflow(self, ref_value: str) -> WorkflowDefinition:
         ref = ArtifactRef.parse(ref_value)
         return self._find_by_ref(
@@ -98,9 +131,8 @@ class LocalRegistry:
             return artifact.id, artifact.version
         if isinstance(artifact, WorkflowDefinition):
             return artifact.id, artifact.version
-        if isinstance(artifact, (CapabilityContractManifest, PolicyManifest)):
+        if isinstance(artifact, (CapabilityContractManifest, PolicyManifest, ToolProviderManifest)):
             return artifact.metadata.id, artifact.metadata.version
         if isinstance(artifact, AgentManifest):
             return artifact.metadata.id, "0.0.0"
         raise TypeError(f"Unsupported artifact identity: {artifact.__class__.__name__}")
-

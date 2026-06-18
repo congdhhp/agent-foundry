@@ -11,6 +11,7 @@ from .models import (
     EvidenceObject,
     PolicyManifest,
     SkillManifest,
+    ToolProviderManifest,
     WorkflowDefinition,
 )
 
@@ -22,6 +23,8 @@ ARTIFACT_MODELS: dict[str, ArtifactModel] = {
     "capability": CapabilityContractManifest,
     "capability-contract": CapabilityContractManifest,
     "policy": PolicyManifest,
+    "tool-provider": ToolProviderManifest,
+    "tool": ToolProviderManifest,
     "workflow": WorkflowDefinition,
     "evidence": EvidenceObject,
     "eval": EvalCase,
@@ -37,6 +40,8 @@ def detect_artifact_type(document: dict[str, Any]) -> str:
         return "capability-contract"
     if kind == "Policy":
         return "policy"
+    if kind == "ToolProvider":
+        return "tool-provider"
     if {"id", "version", "nodes", "runtime"}.issubset(document):
         return "workflow"
     if {"id", "version", "triggers", "requires", "lifecycle_status"}.issubset(document):
@@ -91,6 +96,14 @@ def artifact_summary(artifact: BaseModel) -> dict[str, Any]:
             "id": artifact.metadata.id,
             "version": artifact.metadata.version,
             "rules": len(artifact.spec.rules),
+        }
+    if isinstance(artifact, ToolProviderManifest):
+        return {
+            "type": "tool-provider",
+            "id": artifact.metadata.id,
+            "version": artifact.metadata.version,
+            "protocol": artifact.spec.protocol,
+            "capabilities": len(artifact.spec.capabilities),
         }
     if isinstance(artifact, WorkflowDefinition):
         return {

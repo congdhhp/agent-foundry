@@ -1,0 +1,23 @@
+apiVersion: agents.platform/v1
+kind: ToolProvider
+metadata:
+  id: workspace
+  version: 1.0.0
+  name: Workspace Provider
+  owner: engineering-platform-team
+spec:
+  protocol: in_process
+  transport: local
+  capabilities:
+    - contract: file.read@1.0
+      tool: read_file
+      riskLevel: low
+    - contract: file.patch@1.0
+      tool: apply_patch
+      riskLevel: medium
+  tenantScope: local
+  outputSanitization:
+    redactSecrets: true
+    maxPayloadBytes: 1000000
+    tagUntrusted: false
+
