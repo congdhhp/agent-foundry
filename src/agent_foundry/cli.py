@@ -177,7 +177,7 @@ def _agent(args: argparse.Namespace) -> int:
         )
         return 0 if result.valid else 1
     if args.agent_command == "publish":
-        result = factory.publish(args.agent, args.eval)
+        result = factory.publish(args.agent, args.eval, args.eval_suite)
         print(
             dump_json(
                 {
@@ -186,6 +186,7 @@ def _agent(args: argparse.Namespace) -> int:
                     "errors": result.errors,
                     "warnings": result.warnings,
                     "eval_reports": result.eval_reports,
+                    "eval_suite_reports": result.eval_suite_reports,
                 }
             )
         )
@@ -204,10 +205,21 @@ def _parse_labels(values: list[str]) -> dict[str, str]:
 
 
 def _eval(args: argparse.Namespace) -> int:
+    runner = EvalRunner(args.registry_root, args.store)
     if args.eval_command == "run":
-        report = EvalRunner(args.registry_root, args.store).run(args.eval_case, args.agent)
+        report = runner.run(args.eval_case, args.agent)
         print(dump_json(report.to_dict()))
         return 0 if report.passed else 1
+    if args.eval_command == "run-suite":
+        report = runner.run_suite(args.eval_suite, args.agent)
+        print(dump_json(report.to_dict()))
+        return 0 if report.passed else 1
+    if args.eval_command == "reports":
+        print(dump_json(runner.list_reports()))
+        return 0
+    if args.eval_command == "show":
+        print(dump_json(runner.load_report(args.run_id)))
+        return 0
     raise ValueError(f"Unknown eval command: {args.eval_command}")
 
 
@@ -360,15 +372,22 @@ def build_parser() -> argparse.ArgumentParser:
     agent_publish = agent_subparsers.add_parser("publish", help="Publish a local agent")
     agent_publish.add_argument("agent", help="Agent id or manifest path")
     agent_publish.add_argument("--eval", action="append", default=[])
+    agent_publish.add_argument("--eval-suite", action="append", default=[])
     agent_parser.set_defaults(func=_agent)
 
-    eval_parser = subparsers.add_parser("eval", help="Run local eval cases")
+    eval_parser = subparsers.add_parser("eval", help="Run local eval cases and suites")
     eval_parser.add_argument("--registry-root", default=".")
     eval_parser.add_argument("--store", default=".agent/evals")
     eval_subparsers = eval_parser.add_subparsers(dest="eval_command", required=True)
     eval_run = eval_subparsers.add_parser("run", help="Run an eval case")
     eval_run.add_argument("eval_case")
     eval_run.add_argument("--agent", required=True)
+    eval_run_suite = eval_subparsers.add_parser("run-suite", help="Run an eval suite")
+    eval_run_suite.add_argument("eval_suite")
+    eval_run_suite.add_argument("--agent", required=True)
+    eval_subparsers.add_parser("reports", help="List persisted eval suite reports")
+    eval_show = eval_subparsers.add_parser("show", help="Show a persisted eval suite report")
+    eval_show.add_argument("run_id")
     eval_parser.set_defaults(func=_eval)
 
     tools_parser = subparsers.add_parser("tools", help="Inspect tool providers")
@@ -392,7 +411,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         return args.func(args)
-    except (ValueError, ValidationError) as exc:
+    except (FileNotFoundError, ValueError, ValidationError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 

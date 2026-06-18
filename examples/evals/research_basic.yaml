@@ -24,6 +24,8 @@ expected:
     must_deny:
       - file.patch@1.0
   output:
+    expected_status: completed
+    min_evidence_count: 3
     required_sections:
       - summary
       - evidence

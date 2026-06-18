@@ -84,9 +84,9 @@ Recommended first reference agents:
 
 ## Repository Status
 
-This repository currently contains the architecture blueprint, enterprise-grade documentation baseline and Phase 0 architecture foundation implementation.
+This repository currently contains the architecture blueprint, enterprise-grade documentation baseline and implementation through Phase 5 eval suite pipeline.
 
-## Phase 0 Developer Quickstart
+## Developer Quickstart
 
 Install locally:
 
@@ -123,6 +123,9 @@ agent-foundry skills list
 agent-foundry skills validate examples/skills/web-research
 agent-foundry agent validate examples/agents/research-agent.yaml
 agent-foundry eval run examples/evals/research_basic.yaml --agent examples/agents/research-agent.yaml
+agent-foundry eval run-suite examples/eval-suites/research-agent-evals.yaml --agent examples/agents/research-agent.yaml
+agent-foundry eval reports
+agent-foundry eval show <run_id>
 agent-foundry tools list
 agent-foundry tools validate
 agent-foundry tools bindings examples/agents/research-agent.yaml
@@ -139,7 +142,7 @@ agent-foundry agent create my-research-agent \
   --workflow research_graph@1.0.0
 
 agent-foundry agent inspect my-research-agent
-agent-foundry agent publish my-research-agent --eval examples/evals/research_basic.yaml
+agent-foundry agent publish my-research-agent --eval-suite examples/eval-suites/research-agent-evals.yaml
 agent-foundry run .agent/agents/my-research-agent.yaml "Research capability contracts"
 ```
 

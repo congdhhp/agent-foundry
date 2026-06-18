@@ -25,6 +25,8 @@ expected:
     must_deny:
       - deployment.rollback@1.0
   output:
+    expected_status: completed
+    min_evidence_count: 4
     required_sections:
       - timeline
       - evidence

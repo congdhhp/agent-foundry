@@ -36,6 +36,7 @@ class AgentPublishResult:
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     eval_reports: list[dict[str, Any]] = field(default_factory=list)
+    eval_suite_reports: list[dict[str, Any]] = field(default_factory=list)
 
 
 class AgentFactory:
@@ -155,6 +156,7 @@ class AgentFactory:
         self,
         path_or_id: str | Path,
         eval_cases: list[str | Path] | None = None,
+        eval_suites: list[str | Path] | None = None,
     ) -> AgentPublishResult:
         path = self.resolve_agent_path(path_or_id)
         agent = self.load_local(path)
@@ -175,16 +177,22 @@ class AgentFactory:
             warnings.extend(package_validation.warnings)
 
         eval_reports: list[dict[str, Any]] = []
+        eval_suite_reports: list[dict[str, Any]] = []
+        eval_runner = EvalRunner(self.registry_root, self.store_root / "evals")
         for eval_case in eval_cases or []:
-            report = EvalRunner(self.registry_root, self.store_root / "evals").run(
-                eval_case,
-                path,
-            )
+            report = eval_runner.run(eval_case, path)
             eval_reports.append(report.to_dict())
             if not report.passed:
                 errors.append(f"Eval failed: {report.eval_id}")
-        if not eval_cases:
-            warnings.append("No eval cases were provided for publish gate.")
+        for eval_suite in eval_suites or []:
+            report = eval_runner.run_suite(eval_suite, path)
+            eval_suite_reports.append(report.to_dict())
+            if not report.passed:
+                errors.append(
+                    f"Eval suite failed: {report.suite_id}@{report.suite_version}"
+                )
+        if not eval_cases and not eval_suites:
+            warnings.append("No eval cases or suites were provided for publish gate.")
 
         if errors:
             return AgentPublishResult(
@@ -193,6 +201,7 @@ class AgentFactory:
                 errors=errors,
                 warnings=warnings,
                 eval_reports=eval_reports,
+                eval_suite_reports=eval_suite_reports,
             )
 
         data = load_document(path)
@@ -208,6 +217,7 @@ class AgentFactory:
             errors=[],
             warnings=warnings,
             eval_reports=eval_reports,
+            eval_suite_reports=eval_suite_reports,
         )
 
     def load_local(self, path: str | Path) -> AgentManifest:
@@ -254,4 +264,3 @@ class AgentFactory:
             if capability_ref not in bindings:
                 raise ValueError(f"No tool provider implements {capability_ref}")
         return bindings
-

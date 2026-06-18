@@ -343,3 +343,24 @@ class EvalCase(StrictModel):
     task: EvalTask
     expected: EvalExpected
 
+
+class EvalSuitePassCriteria(StrictModel):
+    min_pass_rate: float = Field(default=1.0, alias="minPassRate", ge=0, le=1)
+    required_checks: list[str] = Field(default_factory=list, alias="requiredChecks")
+
+
+class EvalSuiteSpec(StrictModel):
+    description: str | None = None
+    cases: list[str] = Field(min_length=1)
+    pass_criteria: EvalSuitePassCriteria = Field(
+        default_factory=EvalSuitePassCriteria,
+        alias="passCriteria",
+    )
+
+
+class EvalSuiteManifest(StrictModel):
+    api_version: Literal["agents.platform/v1"] = Field(alias="apiVersion")
+    kind: Literal["EvalSuite"]
+    metadata: VersionedMetadata
+    spec: EvalSuiteSpec
+

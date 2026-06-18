@@ -1,0 +1,23 @@
+apiVersion: agents.platform/v1
+kind: EvalSuite
+metadata:
+  id: monitoring-agent-evals
+  version: 1.0.0
+  name: Monitoring Agent Evals
+  owner: sre-platform-team
+  labels:
+    domain: sre
+spec:
+  description: Release gate for incident triage behavior and observability tool trajectory.
+  cases:
+    - ../evals/incident_triage_basic.yaml
+  passCriteria:
+    minPassRate: 1.0
+    requiredChecks:
+      - selected_skill
+      - must_call
+      - must_not_call
+      - provider_must_call
+      - expected_status
+      - min_evidence_count
+      - must_not_execute_side_effects

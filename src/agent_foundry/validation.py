@@ -8,6 +8,7 @@ from .models import (
     AgentManifest,
     CapabilityContractManifest,
     EvalCase,
+    EvalSuiteManifest,
     EvidenceObject,
     PolicyManifest,
     SkillManifest,
@@ -29,6 +30,8 @@ ARTIFACT_MODELS: dict[str, ArtifactModel] = {
     "evidence": EvidenceObject,
     "eval": EvalCase,
     "eval-case": EvalCase,
+    "eval-suite": EvalSuiteManifest,
+    "suite": EvalSuiteManifest,
 }
 
 
@@ -42,6 +45,8 @@ def detect_artifact_type(document: dict[str, Any]) -> str:
         return "policy"
     if kind == "ToolProvider":
         return "tool-provider"
+    if kind == "EvalSuite":
+        return "eval-suite"
     if {"id", "version", "nodes", "runtime"}.issubset(document):
         return "workflow"
     if {"id", "version", "triggers", "requires", "lifecycle_status"}.issubset(document):
@@ -126,6 +131,14 @@ def artifact_summary(artifact: BaseModel) -> dict[str, Any]:
             "type": "eval-case",
             "id": artifact.id,
             "input": artifact.task.input,
+        }
+    if isinstance(artifact, EvalSuiteManifest):
+        return {
+            "type": "eval-suite",
+            "id": artifact.metadata.id,
+            "version": artifact.metadata.version,
+            "cases": len(artifact.spec.cases),
+            "min_pass_rate": artifact.spec.pass_criteria.min_pass_rate,
         }
     return {"type": artifact.__class__.__name__}
 

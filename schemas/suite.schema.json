@@ -1,0 +1,135 @@
+{
+  "$defs": {
+    "EvalSuitePassCriteria": {
+      "additionalProperties": false,
+      "properties": {
+        "minPassRate": {
+          "default": 1.0,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Minpassrate",
+          "type": "number"
+        },
+        "requiredChecks": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Requiredchecks",
+          "type": "array"
+        }
+      },
+      "title": "EvalSuitePassCriteria",
+      "type": "object"
+    },
+    "EvalSuiteSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "cases": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Cases",
+          "type": "array"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "passCriteria": {
+          "$ref": "#/$defs/EvalSuitePassCriteria"
+        }
+      },
+      "required": [
+        "cases"
+      ],
+      "title": "EvalSuiteSpec",
+      "type": "object"
+    },
+    "VersionedMetadata": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Labels",
+          "type": "object"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "owner": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Owner"
+        },
+        "version": {
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "version"
+      ],
+      "title": "VersionedMetadata",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "apiVersion": {
+      "const": "agents.platform/v1",
+      "title": "Apiversion",
+      "type": "string"
+    },
+    "kind": {
+      "const": "EvalSuite",
+      "title": "Kind",
+      "type": "string"
+    },
+    "metadata": {
+      "$ref": "#/$defs/VersionedMetadata"
+    },
+    "spec": {
+      "$ref": "#/$defs/EvalSuiteSpec"
+    }
+  },
+  "required": [
+    "apiVersion",
+    "kind",
+    "metadata",
+    "spec"
+  ],
+  "title": "EvalSuiteManifest",
+  "type": "object"
+}
