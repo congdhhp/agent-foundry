@@ -74,14 +74,25 @@ class AgentRuntime:
         workflow = self.registry.load_workflow(agent.spec.workflow)
         policy = self.registry.load_policy(agent.spec.policy)
         model_policy = self._load_model_policy(agent)
-        skill_packages = [
+        configured_skill_packages = [
             self.skill_registry.load_package(skill_ref) for skill_ref in agent.spec.skills
         ]
+        available_skill_packages = (
+            configured_skill_packages
+            if configured_skill_packages
+            else self.skill_registry.list_packages()
+        )
         skill_selections = self.skill_selector.select(
             agent,
-            [package.manifest for package in skill_packages],
+            [package.manifest for package in available_skill_packages],
             task_input,
         )
+        packages_by_ref = {package.ref: package for package in available_skill_packages}
+        selected_skill_packages = [
+            packages_by_ref[selection.ref]
+            for selection in skill_selections
+            if selection.ref in packages_by_ref
+        ]
 
         state: dict[str, Any] = {
             "task_id": task_id,
@@ -99,13 +110,22 @@ class AgentRuntime:
             "approved_step_up_actions": [],
             "denied_actions": [],
             "selected_skills": [selection.ref for selection in skill_selections],
+            "available_skills": [
+                {
+                    "skill": package.ref,
+                    "name": package.manifest.name,
+                    "description": package.manifest.description,
+                    "path": str(package.root),
+                }
+                for package in available_skill_packages
+            ],
             "skill_context": [
                 {
                     "skill": package.ref,
                     "instructions": package.instructions,
                     "required_capabilities": package.manifest.requires.capabilities,
                 }
-                for package in skill_packages
+                for package in selected_skill_packages
             ],
             "skill_selection": [
                 {

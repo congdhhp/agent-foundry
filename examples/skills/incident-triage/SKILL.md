@@ -1,3 +1,8 @@
+---
+name: incident-triage
+description: Use when investigating incidents, alerts, outages, latency spikes, production errors or suspected regressions with evidence.
+---
+
 # Incident Triage Skill
 
 ## Purpose
@@ -36,4 +41,3 @@ Use this skill when a user asks to investigate an incident, alert, outage, laten
 - Do not execute remediation.
 - Do not expose secrets from logs.
 - Do not send external incident updates without approval.
-

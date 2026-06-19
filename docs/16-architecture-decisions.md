@@ -22,15 +22,17 @@ This document summarizes the major architecture decisions that should guide impl
 
 ## ADR-002: Skills Are First-Class Packages
 
-**Decision:** A skill is a versioned package with `SKILL.md`, metadata, workflow hints, policy hints, capability requirements, examples and evals.
+**Decision:** A skill is a reusable workflow package whose first-class artifact is `SKILL.md` with `name` and `description` frontmatter. Enterprise governance metadata such as lifecycle, risk, workflow hints, policy hints, capability requirements, examples and evals lives in optional sidecars such as `skill.yaml`.
 
-**Rationale:** Prompt-only skills are not governable enough for enterprise use.
+**Rationale:** Codex/Claude-style skills are easier for users to author and can be loaded through progressive disclosure. Enterprise deployments still need governance sidecars for publication, policy, compatibility and eval gates.
 
 **Consequences:**
 
-1. Skill lifecycle management is required.
-2. Security review and evals become part of skill publication.
-3. Agents should pin skill versions.
+1. Instruction-only skills can be authored quickly with only `SKILL.md`.
+2. Skill lifecycle management is required for production publication.
+3. Security review and evals become part of skill publication.
+4. Agents may start with no explicit skills and select available skills by prompt match.
+5. Published specialist agents should pin skill versions.
 
 ## ADR-003: Use Capability Contracts for Tools
 
@@ -138,4 +140,3 @@ Review an ADR when:
 4. Evidence is optional for high-impact claims.
 5. A2A is proposed before MVP success criteria are met.
 6. New artifact types are introduced.
-

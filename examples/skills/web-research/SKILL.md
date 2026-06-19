@@ -1,3 +1,8 @@
+---
+name: web-research
+description: Use when researching, comparing, summarizing or synthesizing information from web or document sources with evidence and citations.
+---
+
 # Web Research Skill
 
 ## Purpose

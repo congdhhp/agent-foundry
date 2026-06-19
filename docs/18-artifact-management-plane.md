@@ -86,13 +86,13 @@ agent-foundry skill impact <skill-ref>
 
 Skill publish gates:
 
-1. Metadata schema is valid.
-2. `SKILL.md` exists and passes instruction linting.
-3. Required capabilities exist.
+1. `SKILL.md` exists, has `name` and `description` frontmatter and passes instruction linting.
+2. Governance sidecar metadata is valid when `skill.yaml` is present.
+3. Required capabilities exist when the skill declares capability requirements.
 4. Referenced workflow hints exist, when provided.
-5. Output schema exists.
-6. Golden evals pass.
-7. Safety evals pass for medium or higher risk skills.
+5. Output schema exists for production skills.
+6. Golden evals pass for production skills.
+7. Safety evals pass for medium or higher risk production skills.
 8. Existing bound agents are not broken by a new version.
 
 ## Policy Management

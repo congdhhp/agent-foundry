@@ -1,3 +1,8 @@
+---
+name: bug-fixing
+description: Use when fixing bugs, repairing failing tests, changing code behavior or preparing a focused patch with verification.
+---
+
 # Bug Fixing Skill
 
 ## Purpose
@@ -34,4 +39,3 @@ Use this skill when a user asks to fix a bug, repair failing tests, change code 
 - Do not run destructive commands.
 - Do not install dependencies or access the network without approval.
 - Do not write outside the authorized workspace.
-

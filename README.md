@@ -173,7 +173,19 @@ agent-foundry policy simulate read-only@1.0.0 --capability web.search@1.0
 agent-foundry workflow impact research_graph@1.0.0
 ```
 
-Create and publish a local agent:
+Create a general-purpose local agent without skills:
+
+```bash
+agent-foundry agent create my-general-agent \
+  --name "My General Agent" \
+  --purpose "Answer general questions and use approved capabilities when configured" \
+  --policy read-only@1.0.0 \
+  --workflow general_reasoning_graph@1.0.0
+
+agent-foundry run my-general-agent "Explain what an agent skill is"
+```
+
+Create and publish a specialist local agent:
 
 ```bash
 agent-foundry agent create my-research-agent \
@@ -191,6 +203,8 @@ agent-foundry agent bind-tool my-research-agent \
 agent-foundry agent publish my-research-agent --eval-suite examples/eval-suites/research-agent-evals.yaml
 agent-foundry run .agent/agents/my-research-agent.yaml "Research capability contracts"
 ```
+
+Skills are Codex/Claude-style folders with a first-class `SKILL.md`. The optional `skill.yaml` sidecar adds Agent Foundry governance metadata such as capabilities, owner, risk, lifecycle and eval gates.
 
 Approve and resume a paused task:
 

@@ -3,9 +3,9 @@
 ## Directory
 
 ```text
-skills/<skill-id>/
+.agents/skills/<skill-id>/
   SKILL.md
-  skill.yaml
+  skill.yaml                  # optional governance sidecar
   capability_requirements.yaml
   output_schema.json
   evals/
@@ -14,38 +14,14 @@ skills/<skill-id>/
     tool_trajectory_cases.yaml
 ```
 
-## `skill.yaml`
-
-```yaml
-id: example-skill
-version: 1.0.0
-name: Example Skill
-description: Describe what task pattern this skill solves.
-owner: team-name
-risk_level: low
-lifecycle_status: draft
-
-triggers:
-  intents:
-    - example_intent
-  keywords:
-    - example
-
-requires:
-  capabilities:
-    - example.read@1.0
-
-optional_capabilities: []
-
-workflow_hints:
-  default: general_reasoning_graph@1.0.0
-  compatible: []
-output_schema: example_output@1.0.0
-```
-
 ## `SKILL.md`
 
 ```markdown
+---
+name: example-skill
+description: Use when the task matches this reusable workflow.
+---
+
 # Example Skill
 
 ## Purpose
@@ -75,4 +51,33 @@ Do not use this skill when...
 ## Safety constraints
 - Do not execute side effects.
 - Do not expose secrets.
+```
+
+## Optional `skill.yaml`
+
+```yaml
+id: example-skill
+version: 1.0.0
+name: Example Skill
+description: Describe what task pattern this skill solves.
+owner: team-name
+risk_level: low
+lifecycle_status: draft
+
+triggers:
+  intents:
+    - example_intent
+  keywords:
+    - example
+
+requires:
+  capabilities:
+    - example.read@1.0
+
+optional_capabilities: []
+
+workflow_hints:
+  default: general_reasoning_graph@1.0.0
+  compatible: []
+output_schema: example_output@1.0.0
 ```

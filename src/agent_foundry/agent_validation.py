@@ -39,9 +39,10 @@ class AgentDeepValidator:
             policy = None
 
         try:
-            self.registry.load_workflow(agent.spec.workflow)
+            workflow = self.registry.load_workflow(agent.spec.workflow)
         except Exception as exc:  # noqa: BLE001
             errors.append(f"Workflow cannot be resolved: {exc}")
+            workflow = None
 
         if agent.spec.model_policy is not None:
             try:
@@ -56,6 +57,11 @@ class AgentDeepValidator:
                 required_capabilities.update(skill.requires.capabilities)
             except Exception as exc:  # noqa: BLE001
                 errors.append(f"Skill cannot be resolved: {skill_ref}: {exc}")
+
+        if workflow is not None:
+            required_capabilities.update(
+                node.capability for node in workflow.nodes if node.capability is not None
+            )
 
         for capability_ref in sorted(required_capabilities):
             if capability_ref not in agent.spec.capability_bindings:

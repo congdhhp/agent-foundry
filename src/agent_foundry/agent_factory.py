@@ -20,9 +20,10 @@ class AgentCreateRequest:
     name: str
     purpose: str
     owner: str
-    skills: list[str]
     policy: str
     workflow: str
+    skills: list[str] = field(default_factory=list)
+    capabilities: list[str] = field(default_factory=list)
     template: str = "generic-task-agent@1.0.0"
     model_policy: str = "default-model-policy@1.0.0"
     eval_profile: str | None = None
@@ -58,7 +59,10 @@ class AgentFactory:
         if path.exists() and not overwrite:
             raise FileExistsError(f"Agent already exists: {path}")
 
-        capability_bindings = self._auto_bind_capabilities(request.skills)
+        capability_bindings = self._auto_bind_capabilities(
+            request.skills,
+            request.capabilities,
+        )
         manifest = {
             "apiVersion": "agents.platform/v1",
             "kind": "Agent",
@@ -271,13 +275,21 @@ class AgentFactory:
     def agent_path(self, agent_id: str) -> Path:
         return self.agents_dir / f"{agent_id}.yaml"
 
-    def _auto_bind_capabilities(self, skill_refs: list[str]) -> dict[str, str]:
+    def _auto_bind_capabilities(
+        self,
+        skill_refs: list[str],
+        direct_capabilities: list[str] | None = None,
+    ) -> dict[str, str]:
         required: list[str] = []
         for skill_ref in skill_refs:
             skill = self.registry.load_skill(skill_ref)
             for capability in skill.requires.capabilities:
                 if capability not in required:
                     required.append(capability)
+        for capability in direct_capabilities or []:
+            self.registry.load_capability(capability)
+            if capability not in required:
+                required.append(capability)
 
         bindings: dict[str, str] = {}
         providers = self.registry.list_tool_providers()

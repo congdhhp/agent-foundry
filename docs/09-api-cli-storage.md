@@ -58,6 +58,27 @@ agent create monitoring-agent \
   --policy production-read-mostly@2.0.0
 ```
 
+Create a general-purpose agent without attaching skills yet:
+
+```bash
+agent-foundry agent create my-general-agent \
+  --name "My General Agent" \
+  --purpose "General local assistance with governed tools" \
+  --policy read-only@1.0.0 \
+  --workflow general_reasoning_graph@1.0.0
+```
+
+Grant a capability directly, without creating a skill first:
+
+```bash
+agent-foundry agent create my-local-operator \
+  --name "My Local Operator" \
+  --purpose "Operate this computer with approval gates" \
+  --policy workspace-write@1.0.0 \
+  --workflow general_reasoning_graph@1.0.0 \
+  --capability shell.run@1.0
+```
+
 Run task:
 
 ```bash

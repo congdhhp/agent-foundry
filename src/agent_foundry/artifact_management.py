@@ -153,8 +153,15 @@ class ArtifactManager:
         if workflow_hints:
             manifest["workflow_hints"] = workflow_hints
         (skill_dir / "skill.yaml").write_text(dump_yaml(manifest), encoding="utf-8")
+        skill_frontmatter = dump_yaml(
+            {"name": skill_id, "description": manifest["description"]}
+        ).strip()
         (skill_dir / "SKILL.md").write_text(
-            f"# {manifest['name']}\n\nDescribe how this skill should solve tasks.\n",
+            (
+                f"---\n{skill_frontmatter}\n---\n\n"
+                f"# {manifest['name']}\n\n"
+                "Describe how this skill should solve tasks.\n"
+            ),
             encoding="utf-8",
         )
         output_schema_doc = {

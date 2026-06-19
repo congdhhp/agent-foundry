@@ -441,9 +441,10 @@ def _agent(args: argparse.Namespace) -> int:
                 name=args.name,
                 purpose=args.purpose,
                 owner=args.owner,
-                skills=args.skill,
                 policy=args.policy,
                 workflow=args.workflow,
+                skills=args.skill,
+                capabilities=args.capability,
                 template=args.template,
                 model_policy=args.model_policy,
                 eval_profile=args.eval_profile,
@@ -974,7 +975,8 @@ def build_parser() -> argparse.ArgumentParser:
     agent_create.add_argument("--name", required=True)
     agent_create.add_argument("--purpose", required=True)
     agent_create.add_argument("--owner", default="local-user")
-    agent_create.add_argument("--skill", action="append", required=True)
+    agent_create.add_argument("--skill", action="append", default=[])
+    agent_create.add_argument("--capability", action="append", default=[])
     agent_create.add_argument("--policy", required=True)
     agent_create.add_argument("--workflow", required=True)
     agent_create.add_argument("--template", default="generic-task-agent@1.0.0")
