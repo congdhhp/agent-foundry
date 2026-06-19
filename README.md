@@ -84,7 +84,7 @@ Recommended first reference agents:
 
 ## Repository Status
 
-This repository currently contains the architecture blueprint, enterprise-grade documentation baseline and implementation through Phase 7 model plane and deterministic local model execution.
+This repository currently contains the architecture blueprint, enterprise-grade documentation baseline and implementation through Phase 8 tool provider and MCP gateway plane.
 
 ## Developer Quickstart
 
@@ -151,6 +151,17 @@ agent-foundry tools validate
 agent-foundry tools bindings examples/agents/research-agent.yaml
 ```
 
+Use Phase 8 provider and capability commands:
+
+```bash
+agent-foundry provider list
+agent-foundry provider inspect browser
+agent-foundry provider health knowledge-mcp
+agent-foundry provider compatibility knowledge-mcp --capability document.read@1.0
+agent-foundry capability providers web.search@1.0
+agent-foundry capability providers document.read@1.0
+```
+
 Use Phase 6 artifact management commands:
 
 ```bash
@@ -173,6 +184,10 @@ agent-foundry agent create my-research-agent \
   --workflow research_graph@1.0.0
 
 agent-foundry agent inspect my-research-agent
+agent-foundry agent bind-tool my-research-agent \
+  --capability web.search@1.0 \
+  --provider browser \
+  --tool search
 agent-foundry agent publish my-research-agent --eval-suite examples/eval-suites/research-agent-evals.yaml
 agent-foundry run .agent/agents/my-research-agent.yaml "Research capability contracts"
 ```

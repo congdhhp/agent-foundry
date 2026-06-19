@@ -1,0 +1,45 @@
+apiVersion: agents.platform/v1
+kind: CapabilityContract
+metadata:
+  id: document.read
+  version: 1.0.0
+  name: Document Read
+  owner: ai-platform-team
+spec:
+  category: knowledge
+  accessType: read
+  riskLevel: low
+  inputSchema:
+    type: object
+    required:
+      - uri
+    properties:
+      uri:
+        type: string
+      format:
+        type: string
+  outputSchema:
+    type: object
+    required:
+      - content
+      - evidence_id
+      - metadata
+    properties:
+      content:
+        type: string
+      evidence_id:
+        type: string
+      metadata:
+        type: object
+  semanticContract:
+    guarantees:
+      - Reads document content without mutating the source.
+      - Preserves source URI metadata for evidence.
+      - Does not expose provider credentials.
+    constraints:
+      maxDocumentBytes: 5000000
+      requiresSourceUri: true
+  evidence:
+    creates_evidence: true
+    evidence_type: document_observation
+

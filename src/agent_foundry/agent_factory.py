@@ -159,6 +159,32 @@ class AgentFactory:
             },
         }
 
+    def bind_tool(
+        self,
+        path_or_id: str | Path,
+        capability_ref: str,
+        provider_tool: str,
+        overwrite: bool = False,
+    ) -> Path:
+        path = self.resolve_agent_path(path_or_id)
+        self.registry.load_capability(capability_ref)
+        self.registry.resolve_provider_tool(capability_ref, provider_tool)
+        document = load_document(path)
+        bindings = document.setdefault("spec", {}).setdefault("capabilityBindings", {})
+        existing = bindings.get(capability_ref)
+        if existing is not None and existing != provider_tool and not overwrite:
+            raise FileExistsError(
+                f"Capability {capability_ref} is already bound to {existing}. "
+                "Use --overwrite to replace it."
+            )
+        bindings[capability_ref] = provider_tool
+        agent = validate_document(document, "agent")
+        path.write_text(
+            dump_yaml(agent.model_dump(mode="json", by_alias=True, exclude_none=True)),
+            encoding="utf-8",
+        )
+        return path
+
     def publish(
         self,
         path_or_id: str | Path,

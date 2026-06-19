@@ -33,6 +33,35 @@
       "title": "ToolProviderCapability",
       "type": "object"
     },
+    "ToolProviderHealthCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Command"
+        },
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "mode": {
+          "default": "configuration",
+          "title": "Mode",
+          "type": "string"
+        }
+      },
+      "title": "ToolProviderHealthCheck",
+      "type": "object"
+    },
     "ToolProviderOutputSanitization": {
       "additionalProperties": false,
       "properties": {
@@ -53,6 +82,53 @@
         }
       },
       "title": "ToolProviderOutputSanitization",
+      "type": "object"
+    },
+    "ToolProviderProtocol": {
+      "enum": [
+        "in_process",
+        "mcp",
+        "http"
+      ],
+      "title": "ToolProviderProtocol",
+      "type": "string"
+    },
+    "ToolProviderRuntimeControls": {
+      "additionalProperties": false,
+      "properties": {
+        "allowNetwork": {
+          "default": false,
+          "title": "Allownetwork",
+          "type": "boolean"
+        },
+        "allowedDomains": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Alloweddomains",
+          "type": "array"
+        },
+        "rateLimitPerMinute": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ratelimitperminute"
+        },
+        "timeoutSeconds": {
+          "default": 30,
+          "minimum": 1,
+          "title": "Timeoutseconds",
+          "type": "integer"
+        }
+      },
+      "title": "ToolProviderRuntimeControls",
       "type": "object"
     },
     "ToolProviderSpec": {
@@ -77,6 +153,11 @@
           "title": "Capabilities",
           "type": "array"
         },
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
         "endpoint": {
           "anyOf": [
             {
@@ -89,12 +170,17 @@
           "default": null,
           "title": "Endpoint"
         },
+        "healthCheck": {
+          "$ref": "#/$defs/ToolProviderHealthCheck"
+        },
         "outputSanitization": {
           "$ref": "#/$defs/ToolProviderOutputSanitization"
         },
         "protocol": {
-          "title": "Protocol",
-          "type": "string"
+          "$ref": "#/$defs/ToolProviderProtocol"
+        },
+        "runtimeControls": {
+          "$ref": "#/$defs/ToolProviderRuntimeControls"
         },
         "tenantScope": {
           "anyOf": [
@@ -109,9 +195,8 @@
           "title": "Tenantscope"
         },
         "transport": {
-          "default": "in_process",
-          "title": "Transport",
-          "type": "string"
+          "$ref": "#/$defs/ToolProviderTransport",
+          "default": "local"
         }
       },
       "required": [
@@ -120,6 +205,15 @@
       ],
       "title": "ToolProviderSpec",
       "type": "object"
+    },
+    "ToolProviderTransport": {
+      "enum": [
+        "local",
+        "stdio",
+        "http"
+      ],
+      "title": "ToolProviderTransport",
+      "type": "string"
     },
     "VersionedMetadata": {
       "additionalProperties": false,

@@ -13,6 +13,7 @@ from .artifact_management import ArtifactManager, MANAGED_KINDS
 from .evals import EvalRunner
 from .loader import dump_json, dump_yaml, load_document
 from .models import AgentManifest
+from .registry import LocalRegistry
 from .runtime import AgentRuntime, RuntimeOptions
 from .schemas import export_schemas, schema_names
 from .skills import SkillRegistry
@@ -490,6 +491,31 @@ def _agent(args: argparse.Namespace) -> int:
             )
         )
         return 0 if publish_result.published else 1
+    if args.agent_command == "bind-tool":
+        provider_tool = args.provider_tool
+        if provider_tool is None:
+            if args.provider is None or args.tool is None:
+                raise ValueError(
+                    "Use --provider-tool or both --provider and --tool for binding."
+                )
+            provider_tool = f"{args.provider}.{args.tool}"
+        path = factory.bind_tool(
+            args.agent,
+            args.capability,
+            provider_tool,
+            overwrite=args.overwrite,
+        )
+        print(
+            dump_json(
+                {
+                    "bound": True,
+                    "agent": str(path),
+                    "capability": args.capability,
+                    "provider_tool": provider_tool,
+                }
+            )
+        )
+        return 0
     raise ValueError(f"Unknown agent command: {args.agent_command}")
 
 
@@ -586,6 +612,96 @@ def _tools(args: argparse.Namespace) -> int:
         )
         return 0 if all(binding.valid for binding in bindings) else 1
     raise ValueError(f"Unknown tools command: {args.tools_command}")
+
+
+def _provider(args: argparse.Namespace) -> int:
+    providers = ToolProviderRegistry(args.registry_root, args.store)
+    if args.provider_command == "list":
+        print(
+            dump_json(
+                [
+                    {
+                        "id": provider.metadata.id,
+                        "version": provider.metadata.version,
+                        "name": provider.metadata.name,
+                        "enabled": provider.spec.enabled,
+                        "protocol": provider.spec.protocol.value,
+                        "transport": provider.spec.transport.value,
+                        "endpoint": provider.spec.endpoint,
+                        "capabilities": [
+                            {
+                                "contract": capability.contract,
+                                "tool": capability.tool,
+                                "provider_tool": (
+                                    f"{provider.metadata.id}.{capability.tool}"
+                                ),
+                                "risk_level": capability.risk_level.value,
+                            }
+                            for capability in provider.spec.capabilities
+                        ],
+                    }
+                    for provider in providers.list_providers()
+                ]
+            )
+        )
+        return 0
+    if args.provider_command == "inspect":
+        provider = providers.inspect(args.provider)
+        print(dump_json(provider.model_dump(mode="json", by_alias=True, exclude_none=True)))
+        return 0
+    if args.provider_command == "validate":
+        validation_result = providers.validate(args.provider)
+        print(
+            dump_json(
+                {
+                    "valid": validation_result.valid,
+                    "errors": validation_result.errors,
+                    "warnings": validation_result.warnings,
+                }
+            )
+        )
+        return 0 if validation_result.valid else 1
+    if args.provider_command == "health":
+        print(dump_json(providers.health(args.provider).to_dict()))
+        return 0
+    if args.provider_command == "compatibility":
+        compatibility_result = providers.compatibility(args.provider, args.capability)
+        print(dump_json(compatibility_result.to_dict()))
+        return 0 if compatibility_result.compatible else 1
+    raise ValueError(f"Unknown provider command: {args.provider_command}")
+
+
+def _capability(args: argparse.Namespace) -> int:
+    registry = LocalRegistry(args.registry_root, args.store)
+    providers = ToolProviderRegistry(args.registry_root, args.store)
+    manager = ArtifactManager(args.registry_root, args.store)
+    if args.capability_command == "list":
+        print(dump_json(manager.list_artifacts("capability")))
+        return 0
+    if args.capability_command == "inspect":
+        capability = registry.load_capability(args.capability)
+        print(dump_json(capability.model_dump(mode="json", by_alias=True, exclude_none=True)))
+        return 0
+    if args.capability_command == "providers":
+        matches = providers.providers_for_capability(args.capability)
+        print(
+            dump_json(
+                [
+                    {
+                        "capability": match.capability,
+                        "provider_id": match.provider_id,
+                        "provider_tool": match.provider_tool,
+                        "tool_name": match.tool_name,
+                        "protocol": match.protocol,
+                        "transport": match.transport,
+                        "risk_level": match.risk_level,
+                    }
+                    for match in matches
+                ]
+            )
+        )
+        return 0
+    raise ValueError(f"Unknown capability command: {args.capability_command}")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -878,6 +994,19 @@ def build_parser() -> argparse.ArgumentParser:
     agent_publish.add_argument("agent", help="Agent id or manifest path")
     agent_publish.add_argument("--eval", action="append", default=[])
     agent_publish.add_argument("--eval-suite", action="append", default=[])
+    agent_bind_tool = agent_subparsers.add_parser(
+        "bind-tool",
+        help="Bind an agent capability to a provider tool",
+    )
+    agent_bind_tool.add_argument("agent", help="Agent id or manifest path")
+    agent_bind_tool.add_argument("--capability", required=True)
+    agent_bind_tool.add_argument(
+        "--provider-tool",
+        help="Provider tool reference like browser.search",
+    )
+    agent_bind_tool.add_argument("--provider", help="Provider id, used with --tool")
+    agent_bind_tool.add_argument("--tool", help="Tool name, used with --provider")
+    agent_bind_tool.add_argument("--overwrite", action="store_true")
     agent_parser.set_defaults(func=_agent)
 
     eval_parser = subparsers.add_parser("eval", help="Run local eval cases and suites")
@@ -908,6 +1037,60 @@ def build_parser() -> argparse.ArgumentParser:
     )
     tools_bindings.add_argument("agent")
     tools_parser.set_defaults(func=_tools)
+
+    provider_parser = subparsers.add_parser("provider", help="Manage tool providers")
+    provider_parser.add_argument("--registry-root", default=".")
+    provider_parser.add_argument("--store", default=".agent")
+    provider_subparsers = provider_parser.add_subparsers(
+        dest="provider_command",
+        required=True,
+    )
+    provider_subparsers.add_parser("list", help="List provider manifests")
+    provider_validate = provider_subparsers.add_parser(
+        "validate",
+        help="Validate one provider or all providers",
+    )
+    provider_validate.add_argument("provider", nargs="?")
+    provider_inspect = provider_subparsers.add_parser(
+        "inspect",
+        help="Inspect a provider manifest",
+    )
+    provider_inspect.add_argument("provider")
+    provider_health = provider_subparsers.add_parser(
+        "health",
+        help="Run local provider health checks",
+    )
+    provider_health.add_argument("provider")
+    provider_compatibility = provider_subparsers.add_parser(
+        "compatibility",
+        help="Check provider compatibility with capability contracts",
+    )
+    provider_compatibility.add_argument("provider")
+    provider_compatibility.add_argument("--capability")
+    provider_parser.set_defaults(func=_provider)
+
+    capability_parser = subparsers.add_parser(
+        "capability",
+        help="Inspect capability contracts and provider implementations",
+    )
+    capability_parser.add_argument("--registry-root", default=".")
+    capability_parser.add_argument("--store", default=".agent")
+    capability_subparsers = capability_parser.add_subparsers(
+        dest="capability_command",
+        required=True,
+    )
+    capability_subparsers.add_parser("list", help="List capability contracts")
+    capability_inspect = capability_subparsers.add_parser(
+        "inspect",
+        help="Inspect a capability contract",
+    )
+    capability_inspect.add_argument("capability")
+    capability_providers = capability_subparsers.add_parser(
+        "providers",
+        help="List providers that implement a capability",
+    )
+    capability_providers.add_argument("capability")
+    capability_parser.set_defaults(func=_capability)
 
     return parser
 

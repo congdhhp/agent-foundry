@@ -241,6 +241,26 @@ Exit criteria:
 4. Model provider and model are constrained by model policy.
 5. Existing eval suites continue to pass.
 
+### Phase 8: Tool Provider and MCP Gateway Plane
+
+Deliverables:
+
+1. Dedicated provider registry commands.
+2. Capability-to-provider discovery commands.
+3. Agent capability binding command.
+4. Provider health checks for in-process and external providers.
+5. Provider compatibility checks against capability contracts.
+6. MCP stdio provider skeleton with safe dry-run routing.
+7. Example MCP provider and document capability contract.
+
+Exit criteria:
+
+1. A user can discover which providers implement `web.search@1.0` or `document.read@1.0`.
+2. A user can health-check and compatibility-check a provider from the CLI.
+3. A user can bind an agent capability to a provider tool without manually editing YAML.
+4. In-process providers fail validation if they declare capabilities without runtime adapters.
+5. External MCP providers are represented explicitly and dry-run safely until live adapters are installed.
+
 ## MVP Success Criteria
 
 1. Create agent from manifest.

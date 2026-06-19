@@ -5,7 +5,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 ARTIFACT_REF_RE = re.compile(r"^[A-Za-z0-9_.-]+@\d+\.\d+(?:\.\d+)?$")
 CAPABILITY_REF_RE = re.compile(r"^[A-Za-z0-9_.-]+@\d+\.\d+(?:\.\d+)?$")
@@ -64,6 +64,18 @@ class EvidenceSourceType(StrEnum):
     MODEL_VERIFIED_SOURCE = "model_verified_source"
     ARTIFACT = "artifact"
     REMOTE_AGENT_RESULT = "remote_agent_result"
+
+
+class ToolProviderProtocol(StrEnum):
+    IN_PROCESS = "in_process"
+    MCP = "mcp"
+    HTTP = "http"
+
+
+class ToolProviderTransport(StrEnum):
+    LOCAL = "local"
+    STDIO = "stdio"
+    HTTP = "http"
 
 
 def _validate_artifact_ref(value: str, field_name: str) -> str:
@@ -262,17 +274,68 @@ class ToolProviderOutputSanitization(StrictModel):
     tag_untrusted: bool = Field(default=True, alias="tagUntrusted")
 
 
+class ToolProviderRuntimeControls(StrictModel):
+    timeout_seconds: int = Field(default=30, alias="timeoutSeconds", ge=1)
+    rate_limit_per_minute: int | None = Field(
+        default=None,
+        alias="rateLimitPerMinute",
+        ge=1,
+    )
+    allow_network: bool = Field(default=False, alias="allowNetwork")
+    allowed_domains: list[str] = Field(default_factory=list, alias="allowedDomains")
+
+
+class ToolProviderHealthCheck(StrictModel):
+    enabled: bool = True
+    mode: str = "configuration"
+    command: str | None = None
+
+
 class ToolProviderSpec(StrictModel):
-    protocol: str
-    transport: str = "in_process"
+    protocol: ToolProviderProtocol
+    transport: ToolProviderTransport = ToolProviderTransport.LOCAL
     endpoint: str | None = None
     auth_profile: str | None = Field(default=None, alias="authProfile")
     capabilities: list[ToolProviderCapability]
     tenant_scope: str | None = Field(default=None, alias="tenantScope")
+    enabled: bool = True
+    runtime_controls: ToolProviderRuntimeControls = Field(
+        default_factory=ToolProviderRuntimeControls,
+        alias="runtimeControls",
+    )
+    health_check: ToolProviderHealthCheck = Field(
+        default_factory=ToolProviderHealthCheck,
+        alias="healthCheck",
+    )
     output_sanitization: ToolProviderOutputSanitization = Field(
         default_factory=ToolProviderOutputSanitization,
         alias="outputSanitization",
     )
+
+    @model_validator(mode="after")
+    def validate_protocol_transport(self) -> ToolProviderSpec:
+        if (
+            self.protocol == ToolProviderProtocol.IN_PROCESS
+            and self.transport != ToolProviderTransport.LOCAL
+        ):
+            raise ValueError("in_process providers must use local transport")
+        if (
+            self.protocol == ToolProviderProtocol.MCP
+            and self.transport
+            not in {ToolProviderTransport.STDIO, ToolProviderTransport.HTTP}
+        ):
+            raise ValueError("mcp providers must use stdio or http transport")
+        if (
+            self.protocol == ToolProviderProtocol.HTTP
+            and self.transport != ToolProviderTransport.HTTP
+        ):
+            raise ValueError("http providers must use http transport")
+        if self.protocol in {
+            ToolProviderProtocol.MCP,
+            ToolProviderProtocol.HTTP,
+        } and not self.endpoint:
+            raise ValueError("mcp/http providers require an endpoint")
+        return self
 
 
 class ToolProviderManifest(StrictModel):

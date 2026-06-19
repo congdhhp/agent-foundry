@@ -109,10 +109,25 @@ spec:
       tool: query
       riskLevel: low
   tenantScope: required
+  runtimeControls:
+    timeoutSeconds: 30
+    rateLimitPerMinute: 120
+    allowNetwork: true
+    allowedDomains:
+      - mcp.company.com
+  healthCheck:
+    enabled: true
+    mode: configuration
   outputSanitization:
     redactSecrets: true
     maxPayloadBytes: 1000000
 ```
+
+Current local implementation supports:
+
+1. `in_process` + `local` for built-in platform adapters.
+2. `mcp` + `stdio` as an MCP provider skeleton with configuration health checks and dry-run routing.
+3. `mcp` + `http` and `http` + `http` manifest validation with explicit network egress controls.
 
 ## Execution Flow
 
@@ -223,3 +238,17 @@ For MVP, the tool plane can start with:
 
 MCP gateway can be minimal at first, as long as the runtime already calls through the capability abstraction.
 
+## Phase 8 Implementation
+
+Phase 8 adds a dedicated provider management surface:
+
+```bash
+agent-foundry provider list
+agent-foundry provider inspect browser
+agent-foundry provider health knowledge-mcp
+agent-foundry provider compatibility knowledge-mcp --capability document.read@1.0
+agent-foundry capability providers web.search@1.0
+agent-foundry agent bind-tool my-research-agent --capability web.search@1.0 --provider browser --tool search
+```
+
+The older `agent-foundry tools` command group remains supported for compatibility. New usage should prefer `provider` and `capability` commands because they map directly to the domain model.

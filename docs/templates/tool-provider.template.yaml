@@ -1,0 +1,32 @@
+apiVersion: agents.platform/v1
+kind: ToolProvider
+metadata:
+  id: example-provider
+  version: 1.0.0
+  name: Example Provider
+  owner: platform-team
+  labels:
+    environment: local
+spec:
+  protocol: in_process
+  transport: local
+  endpoint: null
+  authProfile: null
+  capabilities:
+    - contract: example.read@1.0
+      tool: read
+      riskLevel: low
+  tenantScope: local
+  enabled: true
+  runtimeControls:
+    timeoutSeconds: 30
+    rateLimitPerMinute: 120
+    allowNetwork: false
+    allowedDomains: []
+  healthCheck:
+    enabled: true
+    mode: configuration
+  outputSanitization:
+    redactSecrets: true
+    maxPayloadBytes: 1000000
+    tagUntrusted: true

@@ -18,6 +18,8 @@ agent skill
 agent policy
 agent workflow
 agent tools
+agent provider
+agent capability
 agent eval
 agent publish
 agent sessions
@@ -35,7 +37,9 @@ agent sessions
 | `agent skill` | Manage skill lifecycle, versions, publish gates and impact analysis |
 | `agent policy` | Manage policy lifecycle, simulation, publishing and impact analysis |
 | `agent workflow` | Manage workflow lifecycle, validation, publishing and impact analysis |
-| `agent tools` | List providers and capability bindings |
+| `agent provider` | List, inspect, validate and health-check tool providers |
+| `agent capability` | Inspect capability contracts and discover provider implementations |
+| `agent tools` | Legacy compatibility group for provider listing and agent binding validation |
 | `agent eval` | Run eval suites |
 | `agent sessions` | Inspect task state, traces and artifacts |
 | `agent publish` | Promote agent after validation/evals |
@@ -98,6 +102,12 @@ agent-foundry workflow impact coding_task_graph@1.0.0
 agent-foundry approvals list <task_id>
 agent-foundry approvals approve <task_id> <approval_id>
 agent-foundry resume <task_id>
+
+agent-foundry provider list
+agent-foundry provider health knowledge-mcp
+agent-foundry provider compatibility knowledge-mcp --capability document.read@1.0
+agent-foundry capability providers web.search@1.0
+agent-foundry agent bind-tool my-research-agent --capability web.search@1.0 --provider browser --tool search
 ```
 
 Current MVP note: local `skill`, `policy` and `workflow` lifecycle commands write user-authored artifacts to `.agent/registry`. The older `skills list`, `skills inspect` and `skills validate` commands remain available for backward compatibility.
@@ -202,9 +212,13 @@ POST   /artifacts/{kind}/{id}/versions/{version}/impact
 ```text
 GET    /capabilities
 GET    /capabilities/{capability_id}
+GET    /capabilities/{capability_id}/providers
 GET    /tools/providers
+GET    /tools/providers/{provider_id}
 POST   /tools/bindings
 POST   /tools/providers/{provider_id}/validate
+POST   /tools/providers/{provider_id}/health
+POST   /tools/providers/{provider_id}/compatibility
 ```
 
 ### Approval Endpoints

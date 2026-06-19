@@ -15,8 +15,8 @@ This documentation set turns the architecture blueprint into an enterprise-grade
 | Audience | Recommended path |
 |---|---|
 | Founder / CTO / Product Owner | [Executive Overview](./00-executive-overview.md), [Product Requirements](./01-product-requirements.md), [MVP Delivery Plan](./11-mvp-delivery-plan.md) |
-| Solution Architect / Technical Lead | [Architecture Overview](./02-architecture-overview.md), [Domain and Manifest Model](./03-domain-and-manifest-model.md), [Runtime and Workflow](./06-runtime-workflow.md), [Model Plane](./19-model-plane.md) |
-| Senior / Staff Engineer | [Skill System](./04-skill-system.md), [Capability and Tool Plane](./05-capability-tool-plane.md), [Artifact Management Plane](./18-artifact-management-plane.md), [API, CLI and Storage](./09-api-cli-storage.md), [Engineering Standards](./13-engineering-standards.md) |
+| Solution Architect / Technical Lead | [Architecture Overview](./02-architecture-overview.md), [Domain and Manifest Model](./03-domain-and-manifest-model.md), [Runtime and Workflow](./06-runtime-workflow.md), [Model Plane](./19-model-plane.md), [Tool Provider and MCP Plane](./20-tool-provider-mcp-plane.md) |
+| Senior / Staff Engineer | [Skill System](./04-skill-system.md), [Capability and Tool Plane](./05-capability-tool-plane.md), [Tool Provider and MCP Plane](./20-tool-provider-mcp-plane.md), [Artifact Management Plane](./18-artifact-management-plane.md), [API, CLI and Storage](./09-api-cli-storage.md), [Engineering Standards](./13-engineering-standards.md) |
 | Security / Governance | [Policy, Security and Governance](./07-policy-security-governance.md), [Evidence, Evaluation and Observability](./08-evidence-evaluation-observability.md), [Risk Register](./14-risk-register.md) |
 | Platform / SRE | [Deployment and Operations](./10-deployment-operations.md), [API, CLI and Storage](./09-api-cli-storage.md), [Risk Register](./14-risk-register.md) |
 
@@ -44,6 +44,7 @@ This documentation set turns the architecture blueprint into an enterprise-grade
 | [17 Production Readiness Checklist](./17-production-readiness-checklist.md) | Release readiness gates for runtime, skills, tools, policy and operations |
 | [18 Artifact Management Plane](./18-artifact-management-plane.md) | Enterprise-grade lifecycle, versioning, publishing and impact analysis for skills, policies and workflows |
 | [19 Model Plane](./19-model-plane.md) | Model policy, provider abstraction, prompt composition and runtime model events |
+| [20 Tool Provider and MCP Plane](./20-tool-provider-mcp-plane.md) | Provider registry, compatibility checks, health checks, MCP provider skeleton and capability binding workflow |
 
 ## Templates
 
@@ -52,6 +53,7 @@ This documentation set turns the architecture blueprint into an enterprise-grade
 | [Agent manifest](./templates/agent-manifest.template.yaml) | Starting point for a new agent instance |
 | [Skill package](./templates/skill-package.template.md) | Required contents for a skill package |
 | [Capability contract](./templates/capability-contract.template.yaml) | Versioned API contract for tool-agnostic capabilities |
+| [Tool provider](./templates/tool-provider.template.yaml) | Provider manifest for in-process, MCP or HTTP-backed capability implementations |
 | [Policy](./templates/policy.template.yaml) | Policy profile with allow, approval, transform and deny rules |
 | [Eval case](./templates/eval-case.template.yaml) | Golden/safety/tool-trajectory eval case schema |
 

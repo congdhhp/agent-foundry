@@ -51,18 +51,18 @@ This checklist defines the minimum gates for moving Agent Foundry components fro
 
 ## Capabilities, Tools and MCP
 
-- [ ] Capability contract registry
-- [ ] Tool provider registry
-- [ ] MCP Gateway
+- [x] Capability contract registry
+- [x] Tool provider registry
+- [x] MCP Gateway v0
 - [ ] Tool authentication
 - [ ] Tool authorization
-- [ ] Tool policy enforcement
+- [x] Tool policy enforcement
 - [x] Output sanitization
 - [ ] Rate limiting
-- [ ] Tool metrics
-- [ ] Provider compatibility tests
+- [x] Tool metrics
+- [x] Provider compatibility tests
 - [ ] Network egress controls
-- [ ] Provider health checks
+- [x] Provider health checks
 
 ## Policy and Security
 

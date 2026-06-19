@@ -8,8 +8,29 @@ from pathlib import Path
 from time import perf_counter
 from typing import Any
 
-from .models import ToolProviderManifest, ToolProviderOutputSanitization
+from .models import (
+    ToolProviderManifest,
+    ToolProviderOutputSanitization,
+    ToolProviderProtocol,
+)
 from .registry import LocalRegistry
+
+
+SUPPORTED_IN_PROCESS_CAPABILITIES = frozenset(
+    {
+        "web.search",
+        "web.fetch",
+        "citation.extract",
+        "file.read",
+        "file.patch",
+        "shell.run",
+        "git.diff",
+        "metrics.query",
+        "logs.search",
+        "traces.search",
+        "deployments.read",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -38,7 +59,7 @@ class ToolExecutor:
         task_input: str,
         prior_outputs: list[dict[str, Any]],
     ) -> ToolExecutionResult:
-        if provider.spec.protocol != "in_process":
+        if provider.spec.protocol != ToolProviderProtocol.IN_PROCESS:
             if self.dry_run:
                 return self._dry_run_external_provider(
                     provider,
@@ -50,6 +71,10 @@ class ToolExecutor:
                 f"{provider.metadata.id}/{provider.spec.protocol}"
             )
         capability_id = capability_ref.split("@", 1)[0]
+        if capability_id not in SUPPORTED_IN_PROCESS_CAPABILITIES:
+            raise ValueError(
+                f"No in-process adapter is registered for capability {capability_id}"
+            )
         handlers = {
             "web.search": self._web_search,
             "web.fetch": self._web_fetch,
@@ -91,13 +116,16 @@ class ToolExecutor:
             output={
                 "metadata": {
                     "dry_run": True,
-                    "protocol": provider.spec.protocol,
+                    "protocol": provider.spec.protocol.value,
+                    "transport": provider.spec.transport.value,
                     "endpoint": provider.spec.endpoint,
+                    "timeout_seconds": provider.spec.runtime_controls.timeout_seconds,
                 }
             },
             summary=(
                 f"Prepared external provider call for {provider.metadata.id} "
-                f"using protocol {provider.spec.protocol}."
+                f"using protocol {provider.spec.protocol.value}/"
+                f"{provider.spec.transport.value}."
             ),
             duration_ms=0,
             success=True,
