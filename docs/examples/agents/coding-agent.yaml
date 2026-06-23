@@ -1,0 +1,56 @@
+apiVersion: agents.platform/v1
+kind: Agent
+metadata:
+  id: coding-agent
+  name: Coding Agent
+  owner: ai-platform-team
+spec:
+  profile:
+    purpose: Implement scoped code changes, inspect repositories, and verify results with evidence.
+    domain: software-engineering
+    modes:
+      - architect
+      - edit
+      - verify
+  instructions:
+    - Start with repository status and relevant code context before proposing edits.
+    - Keep editable files explicit; read broadly only when it improves the change.
+    - Route all file edits through patch tools so policy, evidence, and audit stay intact.
+    - Run targeted lint or tests before claiming a change is complete.
+    - Never commit, push, or run risky shell commands without approval.
+  guidanceFiles:
+    - AGENTS.md
+  skills:
+    - coding-workflow
+  commands:
+    - implement-change
+  tools:
+    - repo.status
+    - repo.diff
+    - repo.map
+    - file.search
+    - file.read
+    - file.patch
+    - lint.run
+    - test.run
+    - shell.run
+    - git.commit
+    - git.undo
+  policies:
+    - workspace-coding-safe
+  hooks:
+    - pre_tool.workspace_path_guard
+    - post_tool.evidence_recorded
+    - post_edit.diff_snapshot
+    - pre_response.verification_required
+  workflow: coding_change_graph
+  knowledgeScopes:
+    - local_workspace
+    - project_docs
+  memoryScopes:
+    - session
+    - task
+    - project_guidance
+  modelPolicy: default-coding-model
+  evidenceModel: code-change-evidence-required
+  evalProfile: coding-agent-evals

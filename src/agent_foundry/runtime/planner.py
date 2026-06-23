@@ -20,6 +20,17 @@ class DeterministicPlanner:
             tool_ids = ["deployments.read", "metrics.query", "logs.search", "runbooks.read", "deployment.rollback"]
         elif skill and skill.id == "web-research":
             tool_ids = ["web.search", "document.read", "knowledge.search", "citation.extract"]
+        elif skill and skill.id == "coding-workflow":
+            tool_ids = [
+                "repo.status",
+                "repo.map",
+                "file.search",
+                "file.read",
+                "file.patch",
+                "lint.run",
+                "test.run",
+                "repo.diff",
+            ]
         else:
             tool_ids = []
 

@@ -1,0 +1,15 @@
+id: implement-change
+description: Implement a scoped code change and verify it with repository evidence.
+skill: coding-workflow
+workflow: coding_change_graph
+defaultTools:
+  - repo.status
+  - repo.map
+  - file.search
+  - file.read
+  - file.patch
+  - lint.run
+  - test.run
+  - repo.diff
+outputSchema: coding_change_report
+evalProfile: coding-agent-evals

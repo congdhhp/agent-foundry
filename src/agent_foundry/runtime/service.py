@@ -270,6 +270,23 @@ class AgentRuntime:
                 "evidence_refs": evidence_refs,
                 "pending_approvals": [approval.tool for approval in state.approvals],
             }
+        if state.selectedSkill == "coding-workflow":
+            executed_tools = [result.tool for result in state.toolCalls]
+            verification_tools = [tool for tool in executed_tools if tool in {"lint.run", "test.run", "repo.diff"}]
+            return {
+                "summary": "Coding workflow resolved repository context, proposed scoped edits through policy, and captured verification evidence.",
+                "change_plan": [
+                    "Inspect repository state and relevant code context.",
+                    "Apply file changes only through the policy-gated patch tool.",
+                    "Run lint, tests, and diff inspection before final handoff.",
+                ],
+                "changed_files": [],
+                "verification": verification_tools,
+                "evidence": evidence_refs,
+                "recommendation": "Approve the proposed patch only after reviewing the intended file scope and then rerun verification.",
+                "evidence_refs": evidence_refs,
+                "pending_approvals": [approval.tool for approval in state.approvals],
+            }
         return {
             "summary": "Research workflow completed with evidence-backed source material.",
             "comparison": [

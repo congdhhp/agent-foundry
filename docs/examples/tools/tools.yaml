@@ -68,3 +68,155 @@ tools:
     accessType: execute
     riskLevel: critical
     requiresApproval: true
+
+  - id: repo.status
+    name: Repository Status
+    description: Inspect the working tree, current branch, and dirty files before coding work.
+    provider: local-workspace
+    accessType: read
+    riskLevel: low
+    actionType: repo.inspect
+    createsEvidence: true
+    whenToUse:
+      - Before making or proposing code changes.
+      - Before committing or summarizing repository state.
+    failureModes:
+      - Repository root cannot be resolved.
+      - Git metadata is unavailable.
+
+  - id: repo.diff
+    name: Repository Diff
+    description: Inspect the current diff after edits or proposed edits.
+    provider: local-workspace
+    accessType: read
+    riskLevel: low
+    actionType: repo.inspect
+    createsEvidence: true
+    whenToUse:
+      - After edits to summarize changed files.
+      - Before final response or commit approval.
+
+  - id: repo.map
+    name: Repository Map
+    description: Build a compact map of relevant files, symbols, and references for the task.
+    provider: local-workspace
+    accessType: read
+    riskLevel: medium
+    actionType: repo.inspect
+    createsEvidence: true
+    whenToUse:
+      - When the agent needs repository orientation without reading every file.
+      - When selecting files for a scoped code change.
+    failureModes:
+      - Repository is too large for the current token budget.
+      - Symbol extraction is not available for a file type.
+
+  - id: file.search
+    name: Search Files
+    description: Search workspace files for paths, identifiers, and text patterns.
+    provider: local-workspace
+    accessType: read
+    riskLevel: low
+    actionType: file.search
+    createsEvidence: true
+    inputSchema:
+      type: object
+      properties:
+        query:
+          type: string
+        path:
+          type: string
+
+  - id: file.read
+    name: Read File
+    description: Read a bounded section of a workspace file.
+    provider: local-workspace
+    accessType: read
+    riskLevel: low
+    actionType: file.read
+    createsEvidence: true
+    inputSchema:
+      type: object
+      properties:
+        path:
+          type: string
+        startLine:
+          type: integer
+        endLine:
+          type: integer
+
+  - id: file.patch
+    name: Apply File Patch
+    description: Apply a scoped patch to one or more workspace files.
+    provider: local-workspace
+    accessType: write
+    riskLevel: high
+    actionType: file.patch
+    createsEvidence: true
+    requiresApproval: true
+    inputSchema:
+      type: object
+      properties:
+        patches:
+          type: array
+        rationale:
+          type: string
+    whenToUse:
+      - To make auditable code changes after reading relevant context.
+    whenNotToUse:
+      - For generated, vendored, secret, or out-of-workspace files without explicit approval.
+    failureModes:
+      - Patch context does not match.
+      - Patch target is outside the workspace.
+      - Search text is not unique.
+
+  - id: lint.run
+    name: Run Lint
+    description: Run configured lint checks and capture output as verification evidence.
+    provider: local-workspace
+    accessType: execute
+    riskLevel: medium
+    actionType: verification.lint
+    createsEvidence: true
+
+  - id: test.run
+    name: Run Tests
+    description: Run targeted or configured tests and capture output as verification evidence.
+    provider: local-workspace
+    accessType: execute
+    riskLevel: medium
+    actionType: verification.test
+    createsEvidence: true
+
+  - id: shell.run
+    name: Run Shell Command
+    description: Run a shell command in the workspace after policy approval.
+    provider: local-workspace
+    accessType: execute
+    riskLevel: high
+    actionType: shell.run
+    createsEvidence: true
+    requiresApproval: true
+    failureModes:
+      - Command is destructive or out of scope.
+      - Command output includes sensitive data.
+
+  - id: git.commit
+    name: Commit Changes
+    description: Create a git commit from approved workspace changes.
+    provider: local-workspace
+    accessType: write
+    riskLevel: high
+    actionType: git.commit
+    createsEvidence: true
+    requiresApproval: true
+
+  - id: git.undo
+    name: Undo Agent Change
+    description: Revert or undo the last approved agent-authored change.
+    provider: local-workspace
+    accessType: write
+    riskLevel: high
+    actionType: git.undo
+    createsEvidence: true
+    requiresApproval: true

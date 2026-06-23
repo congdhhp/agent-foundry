@@ -1,0 +1,60 @@
+id: workspace-coding-safe
+rules:
+  - match:
+      accessType: read
+    decision: allow
+    obligations:
+      - create_evidence_record
+    reason: Read-only repository inspection is allowed for coding workflows.
+
+  - match:
+      tool: file.patch
+    decision: require_approval
+    obligations:
+      - verify_workspace_path
+      - require_editable_scope
+      - create_diff_snapshot
+      - create_audit_event
+      - run_verification_after_edit
+    reason: File edits must be explicit, scoped, auditable, and verifiable.
+
+  - match:
+      tool: lint.run
+    decision: allow
+    obligations:
+      - capture_output
+      - create_evidence_record
+    reason: Lint commands are allowed when captured as verification evidence.
+
+  - match:
+      tool: test.run
+    decision: allow
+    obligations:
+      - capture_output
+      - create_evidence_record
+    reason: Test commands are allowed when captured as verification evidence.
+
+  - match:
+      tool: shell.run
+    decision: require_approval
+    obligations:
+      - classify_shell_risk
+      - capture_output
+      - create_audit_event
+    reason: Arbitrary shell commands require approval until risk classification is implemented.
+
+  - match:
+      tool: git.commit
+    decision: require_approval
+    obligations:
+      - show_diff_summary
+      - create_audit_event
+    reason: Git history changes require explicit user approval.
+
+  - match:
+      tool: git.undo
+    decision: require_approval
+    obligations:
+      - show_revert_plan
+      - create_audit_event
+    reason: Undo operations can discard work and require explicit approval.

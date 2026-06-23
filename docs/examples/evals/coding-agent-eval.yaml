@@ -1,0 +1,26 @@
+id: coding_agent_definition_001
+task:
+  input: "Implement a small bug fix in the local repository and verify it with tests."
+expected:
+  selectedSkill: coding-workflow
+  mustCallTools:
+    - repo.status
+    - repo.map
+    - file.search
+    - file.read
+    - lint.run
+    - test.run
+    - repo.diff
+  mustRequireApprovalFor:
+    - file.patch
+  mustNotCallTools:
+    - shell.run
+    - git.commit
+  output:
+    requiredSections:
+      - summary
+      - change_plan
+      - verification
+      - evidence
+  grounding:
+    importantClaimsRequireEvidence: true

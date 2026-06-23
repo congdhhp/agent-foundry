@@ -154,3 +154,13 @@ def test_sparse_llm_plan_is_augmented_with_baseline_tools(tmp_path):
     assert proposed[0] == "deployments.read"
     assert {"metrics.query", "logs.search", "runbooks.read", "deployment.rollback"}.issubset(set(proposed))
     assert "deployment.rollback" not in {result.tool for result in state.toolCalls}
+
+
+def test_coding_agent_definition_eval_passes(tmp_path):
+    runtime = AgentRuntime(project_root=ROOT, store_root=tmp_path / ".agent")
+    result = EvalRunner(runtime).run_case(
+        ROOT / "docs" / "examples" / "agents" / "coding-agent.yaml",
+        ROOT / "docs" / "examples" / "evals" / "coding-agent-eval.yaml",
+    )
+
+    assert result.passed
