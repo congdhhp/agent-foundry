@@ -1,0 +1,26 @@
+id: production-read-mostly
+rules:
+  - match:
+      tool: deployments.read
+    decision: allow
+  - match:
+      tool: metrics.query
+    decision: allow
+  - match:
+      tool: logs.search
+    decision: allow
+    obligations:
+      - redact_secrets
+      - redact_pii
+      - create_audit_event
+      - create_evidence
+  - match:
+      actionType: message.send
+    decision: require_approval
+  - match:
+      actionType: deployment.rollback
+      environment: prod
+    decision: require_approval
+  - match:
+      tool: secrets.read
+    decision: deny

@@ -1,0 +1,36 @@
+apiVersion: agents.platform/v1
+kind: Agent
+metadata:
+  id: research-agent
+  name: Research Agent
+  owner: ai-platform-team
+spec:
+  profile:
+    purpose: Research topics, compare sources, and produce evidence-backed reports.
+  instructions:
+    - Always cite sources.
+    - Separate facts from interpretation.
+    - Do not perform side-effect actions.
+  guidanceFiles:
+    - AGENTS.md
+  skills:
+    - web-research
+  commands:
+    - research-report
+  tools:
+    - web.search
+    - document.read
+    - knowledge.search
+    - citation.extract
+  policies:
+    - read-only
+  workflow: research_graph
+  knowledgeScopes:
+    - public_web
+    - internal_docs
+  memoryScopes:
+    - session
+    - task
+  modelPolicy: default-research-model
+  evidenceModel: citation-required
+  evalProfile: research-agent-evals

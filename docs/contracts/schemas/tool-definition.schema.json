@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ToolDefinition",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "description",
+    "accessType",
+    "riskLevel"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "provider": {
+      "type": "string"
+    },
+    "accessType": {
+      "enum": [
+        "read",
+        "write",
+        "execute"
+      ]
+    },
+    "riskLevel": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "createsEvidence": {
+      "type": "boolean"
+    },
+    "requiresApproval": {
+      "type": [
+        "boolean",
+        "string"
+      ]
+    },
+    "actionType": {
+      "type": "string"
+    },
+    "whenToUse": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "whenNotToUse": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "failureModes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

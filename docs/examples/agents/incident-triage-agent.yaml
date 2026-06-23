@@ -1,0 +1,44 @@
+apiVersion: agents.platform/v1
+kind: Agent
+metadata:
+  id: incident-triage-agent
+  name: Incident Triage Agent
+  owner: sre-platform-team
+spec:
+  profile:
+    purpose: Investigate production incidents and recommend safe next actions.
+  instructions:
+    - Do not execute remediation without approval.
+    - Do not expose secrets found in logs.
+    - Always include evidence for operational conclusions.
+  guidanceFiles:
+    - AGENTS.md
+  skills:
+    - incident-triage
+    - log-analysis
+    - metrics-analysis
+  commands:
+    - debug-incident
+  tools:
+    - deployments.read
+    - metrics.query
+    - logs.search
+    - runbooks.read
+    - message.draft
+    - deployment.rollback
+  policies:
+    - production-read-mostly
+  hooks:
+    - redact-logs
+    - check-evidence-coverage
+  workflow: incident_triage_graph
+  knowledgeScopes:
+    - service_runbooks
+    - past_incidents
+  memoryScopes:
+    - session
+    - task
+    - project_auto_memory
+  modelPolicy: sre-model-policy
+  evidenceModel: operational-evidence-required
+  evalProfile: incident-triage-evals

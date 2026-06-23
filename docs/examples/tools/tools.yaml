@@ -1,0 +1,42 @@
+tools:
+  - id: web.search
+    name: Web Search
+    description: Search the web for relevant sources.
+    accessType: read
+    riskLevel: low
+    createsEvidence: true
+
+  - id: document.read
+    name: Read Document
+    description: Read a document from an allowed knowledge source.
+    accessType: read
+    riskLevel: low
+    createsEvidence: true
+
+  - id: deployments.read
+    name: Read Deployments
+    description: Read recent deployment events for a service.
+    accessType: read
+    riskLevel: low
+    createsEvidence: true
+
+  - id: metrics.query
+    name: Query Metrics
+    description: Query time-series metrics for a service.
+    accessType: read
+    riskLevel: low
+    createsEvidence: true
+
+  - id: logs.search
+    name: Search Logs
+    description: Search service logs by service name, time range, severity, and query string.
+    accessType: read
+    riskLevel: medium
+    createsEvidence: true
+
+  - id: deployment.rollback
+    name: Rollback Deployment
+    description: Roll back a deployment.
+    accessType: execute
+    riskLevel: critical
+    requiresApproval: true

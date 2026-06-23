@@ -1,0 +1,11 @@
+id: my-policy
+rules:
+  - match:
+      accessType: read
+    decision: allow
+  - match:
+      accessType: write
+    decision: require_approval
+  - match:
+      accessType: execute
+    decision: require_approval

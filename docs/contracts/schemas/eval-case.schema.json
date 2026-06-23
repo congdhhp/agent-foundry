@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EvalCase",
+  "type": "object",
+  "required": [
+    "id",
+    "task",
+    "expected"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "task": {
+      "type": "object"
+    },
+    "expected": {
+      "type": "object"
+    }
+  }
+}

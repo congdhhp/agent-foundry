@@ -1,0 +1,11 @@
+id: read-only
+rules:
+  - match:
+      accessType: read
+    decision: allow
+  - match:
+      accessType: write
+    decision: deny
+  - match:
+      accessType: execute
+    decision: deny

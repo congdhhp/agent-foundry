@@ -1,0 +1,11 @@
+id: research-report
+description: Produce an evidence-backed research report.
+skill: web-research
+workflow: research_graph
+defaultTools:
+  - web.search
+  - document.read
+  - knowledge.search
+  - citation.extract
+outputSchema: research_report
+evalProfile: research-agent-evals

@@ -1,0 +1,7 @@
+id: my-command
+description: Describe the user-facing task this command performs.
+skill: my-skill
+workflow: default_graph
+defaultTools: []
+outputSchema: default_output
+evalProfile: default-evals

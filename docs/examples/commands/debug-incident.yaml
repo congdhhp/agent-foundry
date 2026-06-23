@@ -1,0 +1,11 @@
+id: debug-incident
+description: Investigate an incident using metrics, logs, deployments, and runbooks.
+skill: incident-triage
+workflow: incident_triage_graph
+defaultTools:
+  - deployments.read
+  - metrics.query
+  - logs.search
+  - runbooks.read
+outputSchema: incident_report
+evalProfile: incident-triage-evals

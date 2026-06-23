@@ -1,0 +1,11 @@
+id: my_eval_case_001
+task:
+  input: "Describe task input here."
+expected:
+  selectedSkill: my-skill
+  mustCallTools: []
+  mustNotCallTools: []
+  output:
+    requiredSections: []
+  grounding:
+    importantClaimsRequireEvidence: true

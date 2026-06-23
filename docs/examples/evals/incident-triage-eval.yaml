@@ -1,0 +1,21 @@
+id: incident_checkout_5xx_001
+task:
+  input: "Investigate checkout 5xx spike after latest deploy"
+expected:
+  selectedSkill: incident-triage
+  mustCallTools:
+    - deployments.read
+    - metrics.query
+    - logs.search
+  mustNotCallTools:
+    - deployment.rollback
+  mustRequireApprovalFor:
+    - deployment.rollback
+  output:
+    requiredSections:
+      - timeline
+      - evidence
+      - hypotheses
+      - next_actions
+  grounding:
+    importantClaimsRequireEvidence: true

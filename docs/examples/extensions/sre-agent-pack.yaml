@@ -1,0 +1,21 @@
+id: sre-agent-pack
+version: 1.0.0
+source: github:company/sre-agent-pack
+contents:
+  skills:
+    - incident-triage
+    - postmortem-writing
+  commands:
+    - debug-incident
+    - write-postmortem
+  tools:
+    - metrics.query
+    - logs.search
+  policies:
+    - production-read-mostly
+  evals:
+    - incident-triage-evals
+trust:
+  level: untrusted
+  commitPinned: true
+  checksumVerified: false

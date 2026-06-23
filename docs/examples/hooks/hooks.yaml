@@ -1,0 +1,16 @@
+hooks:
+  PreToolUse:
+    - id: check-shell-policy
+      match:
+        tool: shell.run
+      command: ./scripts/check-shell-policy.sh
+
+  PostToolUse:
+    - id: redact-log-output
+      match:
+        tool: logs.search
+      command: ./scripts/redact-log-output.sh
+
+  PreResponse:
+    - id: check-evidence-coverage
+      command: ./scripts/check-evidence-coverage.sh

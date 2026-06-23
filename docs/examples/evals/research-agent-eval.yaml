@@ -1,0 +1,18 @@
+id: research_cited_report_001
+task:
+  input: "Compare agent skills and tools-first architecture patterns."
+expected:
+  selectedSkill: web-research
+  mustCallTools:
+    - web.search
+    - document.read
+  mustNotCallTools:
+    - message.send
+  output:
+    requiredSections:
+      - summary
+      - comparison
+      - evidence
+      - recommendation
+  grounding:
+    importantClaimsRequireEvidence: true

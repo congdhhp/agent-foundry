@@ -1,0 +1,22 @@
+apiVersion: agents.platform/v1
+kind: Agent
+metadata:
+  id: my-agent
+  name: My Agent
+  owner: my-team
+spec:
+  profile:
+    purpose: Describe what this agent should help with.
+  instructions:
+    - Be clear and safe.
+  guidanceFiles:
+    - AGENTS.md
+  skills: []
+  commands: []
+  tools: []
+  policies:
+    - default-safe
+  memoryScopes:
+    - session
+    - task
+  modelPolicy: default
