@@ -10,6 +10,7 @@ from agent_foundry.evals.runner import EvalRunner
 from agent_foundry.manifests.agent_loader import AgentManifestLoader
 from agent_foundry.manifests.factory import create_blank_agent_manifest
 from agent_foundry.io.yaml import write_yaml
+from agent_foundry.models.provider import build_model_from_env
 from agent_foundry.runtime.service import AgentRuntime
 from agent_foundry.storage.local_store import LocalStore
 from agent_foundry.tui.app import run_tui
@@ -25,6 +26,24 @@ app.add_typer(evidence_app, name="evidence")
 app.add_typer(eval_app, name="eval")
 
 console = Console()
+
+
+def _build_runtime(
+    store: Path,
+    planner: str,
+    provider: str | None,
+    model: str | None,
+    base_url: str | None,
+) -> AgentRuntime:
+    try:
+        return AgentRuntime(
+            project_root=Path.cwd(),
+            store_root=store,
+            planner_mode=planner,
+            model_provider=build_model_from_env(provider=provider, model=model, base_url=base_url),
+        )
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
 
 
 @agent_app.command("inspect")
@@ -63,8 +82,12 @@ def run_agent(
     task: str = typer.Argument(...),
     command: str | None = typer.Option(None, "--command", "-c"),
     store: Path = typer.Option(Path(".agent"), "--store"),
+    planner: str = typer.Option("auto", "--planner", help="auto, deterministic, or llm"),
+    provider: str | None = typer.Option(None, "--provider", help="openai-compatible, openai, or gemini"),
+    model: str | None = typer.Option(None, "--model", help="Override AGENT_FOUNDRY_MODEL."),
+    base_url: str | None = typer.Option(None, "--base-url", help="Override AGENT_FOUNDRY_BASE_URL."),
 ) -> None:
-    runtime = AgentRuntime(project_root=Path.cwd(), store_root=store)
+    runtime = _build_runtime(store, planner, provider, model, base_url)
     state = runtime.run(agent_manifest, task, command_id=command)
     console.print(f"[bold]Task:[/bold] {state.taskId}")
     console.print(f"[bold]Agent:[/bold] {state.agentId}@{state.agentRevision}")
@@ -99,8 +122,12 @@ def run_eval(
     agent_manifest: Path = typer.Argument(..., exists=True, readable=True),
     eval_case: Path = typer.Argument(..., exists=True, readable=True),
     store: Path = typer.Option(Path(".agent"), "--store"),
+    planner: str = typer.Option("deterministic", "--planner", help="deterministic, auto, or llm"),
+    provider: str | None = typer.Option(None, "--provider", help="openai-compatible, openai, or gemini"),
+    model: str | None = typer.Option(None, "--model", help="Override AGENT_FOUNDRY_MODEL."),
+    base_url: str | None = typer.Option(None, "--base-url", help="Override AGENT_FOUNDRY_BASE_URL."),
 ) -> None:
-    runtime = AgentRuntime(project_root=Path.cwd(), store_root=store)
+    runtime = _build_runtime(store, planner, provider, model, base_url)
     result = EvalRunner(runtime).run_case(agent_manifest, eval_case)
     table = Table(title=f"Eval {result.eval_id}: {'PASS' if result.passed else 'FAIL'}")
     table.add_column("Check")

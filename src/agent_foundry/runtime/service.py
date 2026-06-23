@@ -19,8 +19,10 @@ from agent_foundry.evidence.manager import EvidenceManager
 from agent_foundry.evidence.verifier import OutputVerifier
 from agent_foundry.guidance.loader import GuidanceLoader
 from agent_foundry.manifests.agent_loader import AgentManifestLoader
+from agent_foundry.models.provider import ChatModel
 from agent_foundry.policy.engine import PolicyEngine
 from agent_foundry.policy.loader import PolicyLoader
+from agent_foundry.runtime.llm import ModelAnswerComposer, ModelPlanner
 from agent_foundry.runtime.planner import DeterministicPlanner
 from agent_foundry.skills.selector import SkillSelector
 from agent_foundry.skills.skill_loader import SkillLoader
@@ -34,8 +36,16 @@ class AgentRuntime:
         self,
         project_root: str | Path = ".",
         store_root: str | Path = ".agent",
+        planner_mode: str = "auto",
+        model_provider: ChatModel | None = None,
     ) -> None:
         self.project_root = Path(project_root)
+        self.planner_mode = planner_mode
+        self.model_provider = model_provider
+        if planner_mode not in {"auto", "deterministic", "llm"}:
+            raise ValueError("planner_mode must be one of: auto, deterministic, llm")
+        if planner_mode == "llm" and model_provider is None:
+            raise ValueError("LLM planner mode requires a configured model provider.")
         self.store = LocalStore(self.project_root / store_root)
         self.manifest_loader = AgentManifestLoader()
         self.guidance_loader = GuidanceLoader(self.project_root)
@@ -108,7 +118,19 @@ class AgentRuntime:
         if command:
             self._event(state, "command.selected", "select_command", {"command": command.id})
 
-        proposals = self.planner.plan(task_id, task_input, selected_skill, command, tools)
+        use_llm = self._use_llm()
+        if use_llm:
+            self._event(state, "model.used", "plan", {"mode": self.planner_mode})
+            proposals = ModelPlanner(self.model_provider, self.planner).plan(
+                task_id,
+                task_input,
+                selected_skill,
+                command,
+                tools,
+                guidance,
+            )
+        else:
+            proposals = self.planner.plan(task_id, task_input, selected_skill, command, tools)
         state.proposedToolCalls = proposals
         state.plan = [proposal.tool for proposal in proposals]
 
@@ -168,7 +190,7 @@ class AgentRuntime:
                     {"tool": proposal.tool, "reason": decision.reason},
                 )
 
-        state.finalOutput = self._compose_output(state)
+        state.finalOutput = self._compose_output(state, use_llm=use_llm)
         self._event(state, "output.generated", "compose_answer", {"sections": list(state.finalOutput)})
         state.verificationResults = self.verifier.verify(state)
         self._event(
@@ -180,6 +202,13 @@ class AgentRuntime:
         state.status = RunStatus.WAITING_APPROVAL if state.approvals else RunStatus.COMPLETED
         self.store.write_state(state)
         return state
+
+    def _use_llm(self) -> bool:
+        if self.planner_mode == "deterministic":
+            return False
+        if self.planner_mode == "llm":
+            return True
+        return self.model_provider is not None
 
     def _select_command(self, command_id: str | None, commands: list[CommandDefinition]) -> CommandDefinition | None:
         if command_id is None:
@@ -204,7 +233,18 @@ class AgentRuntime:
         )
         self.store.append_event(event)
 
-    def _compose_output(self, state: AgentState) -> dict:
+    def _compose_output(self, state: AgentState, use_llm: bool = False) -> dict:
+        if use_llm and self.model_provider is not None:
+            try:
+                self._event(state, "model.used", "compose_answer", {"mode": self.planner_mode})
+                return ModelAnswerComposer(self.model_provider).compose(state)
+            except Exception as exc:
+                self._event(
+                    state,
+                    "model.fallback",
+                    "compose_answer",
+                    {"reason": str(exc)[:500]},
+                )
         evidence_refs = [evidence.id for evidence in state.evidence]
         if state.selectedSkill == "incident-triage":
             return {

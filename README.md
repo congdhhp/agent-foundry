@@ -40,3 +40,39 @@ agent-foundry tui
 ```
 
 Generated run state is written under `.agent/` and is ignored by git.
+
+## Use a real LLM
+
+By default, the runtime uses deterministic planning unless a model is configured. Set a provider API key and model to let the model propose tool calls and compose the final answer from evidence.
+
+OpenAI or OpenAI-compatible providers:
+
+```bash
+$env:OPENAI_API_KEY="your-api-key"
+$env:AGENT_FOUNDRY_PROVIDER="openai-compatible"
+$env:AGENT_FOUNDRY_MODEL="gpt-4o-mini"
+
+agent-foundry run docs/examples/agents/incident-triage-agent.yaml "Investigate checkout 5xx spike after latest deploy" --planner llm
+```
+
+Gemini:
+
+```bash
+$env:GEMINI_API_KEY="your-gemini-api-key"
+$env:AGENT_FOUNDRY_PROVIDER="gemini"
+$env:AGENT_FOUNDRY_MODEL="gemini-2.5-flash"
+
+agent-foundry run docs/examples/agents/research-agent.yaml "Compare agent skills and tools-first architecture patterns." --planner llm --provider gemini
+```
+
+OpenAI-compatible gateways or local proxies:
+
+```bash
+$env:AGENT_FOUNDRY_BASE_URL="http://localhost:8000/v1"
+$env:AGENT_FOUNDRY_API_KEY="local-key"
+$env:AGENT_FOUNDRY_MODEL="your-model"
+```
+
+The default `--planner auto` mode uses the model when a provider is configured and falls back to deterministic planning otherwise. You can also pass `--provider openai-compatible`, `--provider openai`, or `--provider gemini` per run.
+
+The model can only propose tool calls. Tool execution still goes through policy evaluation first, and critical actions such as `deployment.rollback` remain approval-gated.
