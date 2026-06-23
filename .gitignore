@@ -206,6 +206,9 @@ tempCodeRunnerFile.py
 # Ruff stuff:
 .ruff_cache/
 
+# Agent Foundry local runtime state
+.agent/
+
 # PyPI configuration file
 .pypirc
 

@@ -13,6 +13,20 @@ tools:
     riskLevel: low
     createsEvidence: true
 
+  - id: knowledge.search
+    name: Search Knowledge
+    description: Search approved knowledge scopes.
+    accessType: read
+    riskLevel: low
+    createsEvidence: true
+
+  - id: citation.extract
+    name: Extract Citations
+    description: Extract citation-ready evidence from retrieved sources.
+    accessType: read
+    riskLevel: low
+    createsEvidence: true
+
   - id: deployments.read
     name: Read Deployments
     description: Read recent deployment events for a service.
@@ -31,6 +45,20 @@ tools:
     name: Search Logs
     description: Search service logs by service name, time range, severity, and query string.
     accessType: read
+    riskLevel: medium
+    createsEvidence: true
+
+  - id: runbooks.read
+    name: Read Runbooks
+    description: Read approved operational runbooks for an incident.
+    accessType: read
+    riskLevel: low
+    createsEvidence: true
+
+  - id: message.draft
+    name: Draft Message
+    description: Draft an outbound message without sending it.
+    accessType: write
     riskLevel: medium
     createsEvidence: true
 

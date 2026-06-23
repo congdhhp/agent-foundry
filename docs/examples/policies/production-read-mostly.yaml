@@ -15,6 +15,12 @@ rules:
       - create_audit_event
       - create_evidence
   - match:
+      tool: runbooks.read
+    decision: allow
+    obligations:
+      - create_audit_event
+      - create_evidence
+  - match:
       actionType: message.send
     decision: require_approval
   - match:
